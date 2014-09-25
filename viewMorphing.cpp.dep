@@ -1,0 +1,246 @@
+//============================================================================
+// Name        : viewMorphing.cpp
+// Author      : Murat Ambarkutuk
+// Version     :
+// Copyright   : Your copyright notice
+// Description : Hello World in C++, Ansi-style
+//============================================================================
+
+#include <iostream>
+#include "cv.h"
+#include "opencv2/core/core.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/flann/flann.hpp"
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/nonfree/features2d.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/legacy/legacy.hpp"
+#include "libViewMorphing.h"
+
+using namespace std;
+using namespace cv;
+
+const int alpha_slider_max = 100;
+const int beta_slider_max = 100;
+int alpha_slider, beta_slider;
+double alpha, beta;
+
+double data0[] ={1918.270000, 2.489820, 494.085000, //intrinsic values
+          0.0, 1922.580000, 320.264,
+          0.0, 0.0, 1.0};
+
+double data3[] = {1909.910000,	0.571503, 545.069000, //intrinsic values
+		0.0, 1915.890000, 394.306000,
+		0.0, 0.0, 1.0};
+
+double dist[] = {-0.0, 0.0, -0.0, 0.0, 0.00000};	//distortion coeff's
+
+Mat warpedLeftFrame,warpedRightFrame, inter; // Pre-warped Images and Linear Interpolated Image
+Mat H1,H2, Hs,E,F;			// Sparse Matrix of Projection M.
+
+Mat D(1, 5, CV_64F, dist);	 // distortion coeff's
+Mat K0(3, 3, CV_64F, data0); // intrinsic matrix
+Mat K3(3, 3, CV_64F, data3); // intrinsic matrix
+Mat R1, R2, P1_, P2_, Q;	 // R's rotation matrixes, P's translation matrixes, Q
+Mat cameraMatrixLeft, rotMatrixLeft, cameraMatrixRight, rotMatrixRight, transMatrixLeft, transMatrixRight, mask;
+Matx34d P;
+Matx34d P1;
+bool verbose = false;
+
+void on_trackbar(int, void*){
+  alpha = (double) alpha_slider/alpha_slider_max;
+  beta = (double) beta_slider/beta_slider_max;
+  cout<<"alpha: "<<alpha<<" beta: "<<beta<<endl;
+  //imshow("Linear Interpolation", inter);
+}
+
+int main(){
+	Mat leftFrame_ = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam0/color-cam0-f000.jpg",1);
+	Mat rightFrame_ = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
+	Mat finalLeft,finalRight,img_matches,leftFrame,rightFrame;
+	Mat descriptors_object, descriptors_scene;
+	std::vector<KeyPoint> keypoints_object, keypoints_scene;
+	std::vector< DMatch > matches, good_matches;
+	std::vector<Point2f> obj, scene, obj_, scene_;
+	vector<Point3f> lines1, lines2;
+	RNG rng(12345);
+	FlannBasedMatcher matcher;
+	char TrackbarName[50];
+	char TrackbarName2[50];
+	sprintf(TrackbarName, "Alpha x %d", alpha_slider_max);
+	sprintf(TrackbarName2, "Beta x %d", beta_slider_max);
+
+	if(!leftFrame_.data || !rightFrame_.data){
+		cout<<"Image could loaded"<<endl;
+		return -1;
+	}
+
+	resize(leftFrame_,leftFrame_,Size(0,0),0.5,0.5);
+	resize(rightFrame_,rightFrame_,Size(0,0),0.5,0.5);
+
+	cvtColor(leftFrame_,leftFrame_,CV_RGB2GRAY);
+	cvtColor(rightFrame_,rightFrame_,CV_RGB2GRAY);
+
+	leftFrame_.copyTo(finalLeft);
+	cvtColor(finalLeft,finalLeft,CV_GRAY2RGB);
+	rightFrame_.copyTo(finalRight);
+	cvtColor(finalRight,finalRight,CV_GRAY2RGB);
+
+	namedWindow("Left Frame",1);
+	namedWindow("Right Frame",1);
+
+	// TODO
+	// Uncomment to view trackbars
+	// view maximum translations with respect to the each axis
+ 	// namedWindow("Linear Interpolation",1);
+	// createTrackbar(TrackbarName, "Linear Interpolation", &alpha_slider, alpha_slider_max, on_trackbar);
+	// createTrackbar(TrackbarName2, "Linear Interpolation", &beta_slider, beta_slider_max, on_trackbar);
+
+
+	// Undistortion
+	undistort(leftFrame_, leftFrame, K0, D);
+	undistort(rightFrame_, rightFrame, K3, D);
+
+	int minHessian = 400;
+
+	SurfFeatureDetector detector(minHessian);
+
+	detector.detect(leftFrame, keypoints_object);
+	detector.detect(rightFrame, keypoints_scene);
+
+	SurfDescriptorExtractor extractor;
+
+	extractor.compute(leftFrame, keypoints_object, descriptors_object);
+	extractor.compute(rightFrame, keypoints_scene, descriptors_scene);
+	matcher.match(descriptors_object, descriptors_scene, matches);
+
+	double max_dist = 0; double min_dist = 100;
+
+	for(int i = 0; i < descriptors_object.rows; i++){
+		double dist = matches[i].distance;
+	    if(dist < min_dist) min_dist = dist;
+	    if(dist > max_dist) max_dist = dist;
+	}
+
+	for(int i = 0; i < descriptors_object.rows; i++){
+		if(matches[i].distance < 2*min_dist){
+			good_matches.push_back(matches[i]);
+		}
+	}
+
+	drawMatches(leftFrame, keypoints_object, rightFrame, keypoints_scene, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	if(verbose) cout<<"Good matches: "<<good_matches.size()<<endl;
+	for(int i = 0; i < (int)good_matches.size(); i++){
+		obj.push_back(keypoints_object[ good_matches[i].queryIdx ].pt);
+	    scene.push_back(keypoints_scene[ good_matches[i].trainIdx ].pt);
+	}
+
+	F = findFundamentalMat(obj,scene,mask);
+	//correctMatches(F, obj, scene, obj_, scene_);
+
+	E = K0.t() * F * K0;
+
+	//decompose E to P' , HZ (9.19)
+	SVD svd(E,SVD::MODIFY_A);
+	Mat svd_u = svd.u;
+	Mat svd_vt = svd.vt;
+	Mat svd_w = svd.w;
+	Matx33d W(0,-1,0,1,0,0,0,0,1);//HZ 9.13
+	Mat_<double> R = svd_u * Mat(W) * svd_vt; //HZ 9.19
+	Mat_<double> t = svd_u.col(2); //u3
+
+	P1 = Matx34f(R(0,0),R(0,1),R(0,2),t(0),
+	             R(1,0),R(1,1),R(1,2),t(1),
+	             R(2,0),R(2,1),R(2,2),t(2));
+
+	std::vector<Point3f> first;
+	std::vector<Point3f> second;
+	for(int i=0; i<(signed int)mask.total();i++){
+		Mat K_inv  = K0.inv();
+		if((bool)mask.at<uchar>(i)){
+
+		}
+	}
+
+	//-- Step 7: Reprojection Matrix and rectification data
+	stereoRectify(K0, D, K3, D, leftFrame.size(), R, t, R1, R2, P1_, P2_, Q, CV_CALIB_ZERO_DISPARITY);
+
+	decomposeProjectionMatrix(P1, cameraMatrixLeft, rotMatrixLeft, transMatrixLeft);
+	decomposeProjectionMatrix(P1, cameraMatrixRight, rotMatrixRight, transMatrixRight);
+
+	/** Calculate Epipolar Lines **/
+	if(verbose){
+		computeCorrespondEpilines(obj_, 1, F, lines1);
+		computeCorrespondEpilines(scene_, 2, F, lines2);
+	}
+	/** Draw Epipolar Lines **/
+	if(verbose){
+		for(int i=0;i<(int)lines1.size();i++){
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+			Point pt1,pt2;
+			pt1.x = 0;
+			pt1.y = -lines1.at(i).z/lines1.at(i).y;
+			pt2.x = finalLeft.cols;
+			pt2.y = -(lines1.at(i).z+lines1.at(i).x*finalLeft.cols)/lines1.at(i).y;
+			line(finalLeft,pt1,pt2,color,1,CV_AA);
+		}
+
+		for(int i=0;i<(int)lines2.size();i++){
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+			Point pt1,pt2;
+			pt1.x = 0;
+			pt1.y = -lines2.at(i).z/lines2.at(i).y;
+			pt2.x = finalLeft.cols;
+			pt2.y = -(lines2.at(i).z+lines2.at(i).x*finalLeft.cols)/lines2.at(i).y;
+			line(finalRight,pt1,pt2,color,1,CV_AA);
+		}
+
+		/* Draw KeyPoints  */
+		for(int i=0;i<(int)obj.size();i++){
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+			Point pt1 = obj_.at(i);
+			circle(finalLeft,pt1,5,color,1,CV_AA);
+		}
+
+		for(int i=0;i<(int)scene.size();i++){
+			Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+			Point pt1 = scene_.at(i);
+			circle(finalRight,pt1,5,color,1,CV_AA);
+		}
+	}
+	/* PreWarp */
+	if(verbose) cout<<"P1_"<<P1<<endl;
+	//**
+	//Mat x(P1_, Rect(0,0,3,3));
+	//H1 = x.clone();
+	//**
+	if(verbose){
+		cout<<"P1= "<<P1_<<endl<<"Kleft= "<<cameraMatrixLeft<<endl<<"Rleft= "<<rotMatrixLeft<<endl<<"Tleft= "<<transMatrixLeft<<endl;
+		cout<<"P2= "<<P2_<<endl<<"Kright= "<<cameraMatrixRight<<endl<<"Rright= "<<rotMatrixRight<<endl<<"Tright= "<<transMatrixRight<<endl;
+	}
+
+	warpPerspective(leftFrame,warpedLeftFrame,cameraMatrixLeft.inv(),Size(leftFrame.cols,leftFrame.rows));
+	warpPerspective(rightFrame,warpedRightFrame,cameraMatrixRight.inv(),Size(rightFrame.cols,rightFrame.rows));
+
+	/// Show some stuff
+	//on_trackbar(alpha_slider, 0);
+
+	//-- Show detected matches
+	imshow("Left Frame",leftFrame);
+	imshow("Right Frame",rightFrame);
+
+	if(verbose){
+		imshow("Good Matches & Object detection", img_matches);
+		imshow("Epipolar Lines & KeyPoints Left",finalLeft);
+		imshow("Epipolar Lines & KeyPoints Right",finalRight);
+	}
+
+	imshow("Prewarped Left",warpedLeftFrame);
+	imshow("Prewarped Right",warpedRightFrame);
+
+	waitKey(0);
+	return 0;
+}
