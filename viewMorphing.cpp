@@ -28,12 +28,12 @@ const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
 double alpha, beta;
 
-double intrinsicX[] ={1918.270000, 2.489820, 494.085000, //intrinsic values
-          0.0, 1922.580000, 320.264,
+double intrinsicX[] ={1918.270000, 2.489820, -17.915, //intrinsic values
+          0.0, 1922.580000, 63.736, //(320.264)
           0.0, 0.0, 1.0};
 
-double intrinsicY[] = {1909.910000,	0.571503, 545.069000, //intrinsic values
-		0.0, 1915.890000, 394.306000,
+double intrinsicY[] = {1909.910000,	0.571503, 33.069000, //intrinsic values
+		0.0, 1915.890000, -10.306, // (394,306)
 		0.0, 0.0, 1.0};
 
 double dist[] = {-0.0, 0.0, -0.0, 0.0, 0.00000};	//distortion coeff's

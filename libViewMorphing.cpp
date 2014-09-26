@@ -170,11 +170,11 @@ void viewMorphing::decomposeEssentialMatrix(){
 		}
 	}
 	Rot = cv::Mat(R).clone();
-	T = svd_u.col(2).clone();
+	T = cv::Mat(svd_u.col(2)).clone();
 	if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
 		T = -1*T;
 		if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
-			R = svd_u * cv::Mat(W).t() * svd_vt;
+			Rot = svd_u * cv::Mat(W).t() * svd_vt;
 			T = -1*T;
 			if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
 				T = -1*T;
@@ -203,19 +203,28 @@ void viewMorphing::initMorph(double scale){
 
 void viewMorphing::preWarp(){
 	cv::Mat R1, R2, P1, P2, Q, mapx1, mapx2, mapy1, mapy2;
-	cv::Rect validROI[2];
 	cv::Mat rectX, rectY;
-	cv::stereoRectify(intrinsicX, distortionCoeffs, intrinsicY, distortionCoeffs, frameX.size(), Rot, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 1); //, &validROI[0], &validROI[1]);
-
-	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffs, R1, intrinsicX, frameX.size(), CV_32FC1, mapx1, mapy1);
-	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffs, R2, intrinsicX, frameX.size(), CV_32FC1, mapx2, mapy2);
+	std::cout<<"ROT: "<<std::endl<<Rot<<"T: "<<std::endl<<T<<std::endl;
+	cv::stereoRectify(intrinsicX, distortionCoeffs, intrinsicY, distortionCoeffs, frameX.size(), Rot, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 0); //, cv::Size(), &validROI[0], &validROI[1]);
+//	std::cout<<"R1:"<<std::endl;
+//	std::cout<<R1<<std::endl;
+//	std::cout<<"R2:"<<std::endl;
+//	std::cout<<R2<<std::endl;
+//	std::cout<<"P1:"<<std::endl;
+//	std::cout<<P1<<std::endl;
+//	std::cout<<"P2:"<<std::endl;
+//	std::cout<<P2<<std::endl;
+//	std::cout<<"Q:"<<std::endl;
+//	std::cout<<Q<<std::endl;
+	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffs, R1, cv::Mat(), frameX.size(), CV_32FC1, mapx1, mapy1);
+	cv::initUndistortRectifyMap(intrinsicY, distortionCoeffs, R2, cv::Mat(), frameX.size(), CV_32FC1, mapx2, mapy2);
 
 	cv::remap(frameX, rectX, mapx1, mapy1, CV_INTER_LINEAR);
 	cv::remap(frameY, rectY, mapx2, mapy2, CV_INTER_LINEAR);
+
 	//cv::warpPerspective(frameX,rectX,R1,frameX.size());
 	//cv::warpPerspective(frameY,rectY,R2,frameY.size());
-	//cv::imshow("valid1", cv::Mat(frameX, validROI[0]));
-	//cv::imshow("valid2", cv::Mat(frameY, validROI[1]));
+
 	cv::imshow("asd1", rectX);
 	cv::imshow("asd2", rectY);
 }
@@ -234,6 +243,6 @@ void viewMorphing::uncalibratedRect(){
 	cv::stereoRectifyUncalibrated(matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY, F, frameX.size(), H1, H2);
 	cv::warpPerspective(frameX, preWrappedLeft1, H1, frameX.size());
 	cv::warpPerspective(frameY, preWrappedRight1, H2, frameX.size());
-	cv::imshow("h1", preWrappedLeft1);
-	cv::imshow("h2", preWrappedRight1);
+	//cv::imshow("Uncalibrated Rectified Image Left", preWrappedLeft1);
+	//cv::imshow("Uncalibrated Rectified Image Right", preWrappedRight1);
 }
