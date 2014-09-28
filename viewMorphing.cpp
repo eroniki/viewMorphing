@@ -29,10 +29,10 @@ int alpha_slider, beta_slider;
 double alpha, beta;
 
 double intrinsicX[] ={1918.270000, 2.489820, -17.915, //intrinsic values
-          	  	  	  0.0, 1922.580000, 63.736, //(320.264)
+          	  	  	  0.0, 1922.580000, -63.736, //(320.264)
           	  	  	  0.0, 0.0, 1.0};
 
-double intrinsicY[] = {1909.910000,	0.571503, 33.069000, //intrinsic values
+double intrinsicY[] = {1909.910000,	0.571503, -33.069000, //intrinsic values
 						0.0, 1915.890000, -10.306, // (394,306)
 						0.0, 0.0, 1.0};
 
@@ -40,16 +40,6 @@ double dist[] = {-0.0, 0.0, -0.0, 0.0, 0.00000};	//distortion coeff's
 
 char alphaBarText[50];
 char betaBarText[50];
-
-// FIXME Delete the unnecessary one's.
-Mat warpedLeftFrame,warpedRightFrame, inter; // Pre-warped Images and Linear Interpolated Image
-Mat H1,H2, Hs,E,F;			// Sparse Matrix of Projection M.
-
-Mat R1, R2, P1_, P2_, Q;	 // R's rotation matrixes, P's translation matrixes, Q
-Mat cameraMatrixLeft, rotMatrixLeft, cameraMatrixRight, rotMatrixRight, transMatrixLeft, transMatrixRight, mask;
-Matx34d P;
-Matx34d P1;
-bool verbose = false;
 
 void on_trackbar(int, void*){
   alpha = (double) alpha_slider/alpha_slider_max;
