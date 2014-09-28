@@ -28,7 +28,7 @@ const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
 double alpha, beta;
 
-double intrinsicX[] ={1918.270000, 2.489820, -17.915, //intrinsic values
+double intrinsicX[] ={1918.270000, 2.489820, 17.915, //intrinsic values
           	  	  	  0.0, 1922.580000, -63.736, //(320.264)
           	  	  	  0.0, 0.0, 1.0};
 
