@@ -69,7 +69,7 @@ int main(){
 	myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
 
 	if(!myMorph.frameX.data || !myMorph.frameY.data){
-		cout<<"Image could loaded"<<endl;
+		cerr<<"Image could loaded!"<<endl;
 		return -1;
 	}
 
@@ -80,20 +80,29 @@ int main(){
 //	sprintf(betaBarText, "Beta x %d", beta_slider_max);
 //	createTrackbar(alphaBarText, "Linear Interpolation", &alpha_slider, alpha_slider_max, on_trackbar);
 //	createTrackbar(betaBarText, "Linear Interpolation", &beta_slider, beta_slider_max, on_trackbar);
-
+	// Pre-proccessing before warping. Undistort images, make them gray scale and produce 3 channel gray images.
 	myMorph.initMorph();
-
+	// Find features
 	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
+	// Extract descriptors
 	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
+	// Match features
 // TODO Make a proper threshold for this variable, try.. except..
 	int goodMatches = myMorph.featureMatcher(0,100,true);
-	if(goodMatches<10)
+	// Check if there is enough matching features or not to proceed.
+	if(goodMatches<10){
+		cerr<<"Couldn't find enough matching keypoints."<<endl;
 		return -2;
+	}
+	// Use matching features to estimate fundamental matrix (F)
 	myMorph.getFundamentalMatrix();
+	// Get Essential matrix (E) from F
 	myMorph.getEssentialMatrix();
+	// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
 	myMorph.decomposeEssentialMatrix();
+	// Rectify both input images to make them on the same plane.
+	// In^ = In*inverse(Hn)
 	myMorph.preWarp();
-	myMorph.uncalibratedRect();
 
 // TODO Do it step by step
 //	myMorph.interpolate();

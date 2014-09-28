@@ -26,6 +26,9 @@ class viewMorphing{
 	bool verbose;
 	cv::Mat intrinsicX, intrinsicY, distortionCoeffs; // Intrinsic Matrixes
 	cv::Mat descriptorsX, descriptorsY;
+	cv::Mat intrinsicXInverse, intrinsicYInverse;
+	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
+	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
 	std::vector<cv::KeyPoint> keypointsX, keypointsY;
 	std::vector<cv::DMatch> matches, good_matches;
 	std::vector<cv::Point3f> linesX, linesY;
@@ -41,13 +44,6 @@ public:
 	cv::Mat E, F; // Essential and Fundamental Matrix
 	cv::Matx34f P1; // Projection Matrix
 	cv::Mat Rot, T; // Rotation and translation
-// TODO Make private
-// <here>
-	cv::Mat mask; // mask for validate fundamental matrix
-	cv::Mat intrinsicXInverse, intrinsicYInverse;
-	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
-	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
-// </here>
 	viewMorphing();
 	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, bool isVerbose = false);
 	~viewMorphing();

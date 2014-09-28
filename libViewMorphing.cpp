@@ -8,7 +8,6 @@
 #include "libViewMorphing.h"
 
 // private functions
-// TODO implement this function
 bool viewMorphing::isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T){
 	for(unsigned int i=0;i<inlierX.size();i++){
 		cv::Mat pX(inlierX.at(i));
@@ -122,7 +121,7 @@ int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 	}
 	if(draw){
 		drawMatches(frameXUndistorted, keypointsX, frameYUndistorted, keypointsY, good_matches, frameMatches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imshow("asd",frameMatches);
+		imshow("Matching Keypoints",frameMatches);
 	}
 
 	for(int i = 0; i < (int)good_matches.size(); i++){
@@ -187,16 +186,15 @@ void viewMorphing::decomposeEssentialMatrix(){
 void viewMorphing::initMorph(double scale){
 	cv::undistort(frameX, frameXUndistorted, intrinsicX, distortionCoeffs);
 	cv::undistort(frameY, frameYUndistorted, intrinsicY, distortionCoeffs);
-	//frameXUndistorted = frameX.clone();
-	//frameYUndistorted = frameY.clone();
+
 	if(scale != 1.0){
 		cv::resize(frameXUndistorted,frameXUndistorted,cv::Size(0,0),scale,scale);
 		cv::resize(frameYUndistorted,frameYUndistorted,cv::Size(0,0),scale,scale);
 	}
-
+	// Produce Gray Images from Undistorted RGB ones for speed concerns.
 	cv::cvtColor(frameXUndistorted,frameGrayX,CV_RGB2GRAY);
 	cv::cvtColor(frameYUndistorted,frameGrayY,CV_RGB2GRAY);
-
+	// Produce 3 channel Gray Images
 	cv::cvtColor(frameGrayX,frameGrayX3C,CV_GRAY2RGB);
 	cv::cvtColor(frameGrayY,frameGrayY3C,CV_GRAY2RGB);
 }
