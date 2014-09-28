@@ -12,23 +12,23 @@ bool viewMorphing::isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std:
 	for(unsigned int i=0;i<inlierX.size();i++){
 		cv::Mat pX(inlierX.at(i));
 		cv::Mat pY(inlierY.at(i));
-		std::cout<<"R "<<R<<std::endl<<"T: "<<T<<std::endl;
+		//std::cout<<"R "<<R<<std::endl<<"T: "<<T<<std::endl;
 		// np.dot(rot[0, :] - second[0]*rot[2, :], trans)
 		cv::Mat num = (R.row(0)-pY.at<double>(0,0)*R.row(2))*T;
-		std::cout<<"px: "<<pX<<std::endl;
-		std::cout<<"py: "<<pY<<std::endl;
-		std::cout<<"num: "<<num<<std::endl;
+		//std::cout<<"px: "<<pX<<std::endl;
+		//std::cout<<"py: "<<pY<<std::endl;
+		//std::cout<<"num: "<<num<<std::endl;
 		//np.dot(rot[0, :] - second[0]*rot[2, :], second)
 		cv::Mat denum = (R.row(0)-pY.at<double>(0,0)*R.row(2))*pY;
-		std::cout<<"denum:"<<denum<<std::endl;
+		//std::cout<<"denum:"<<denum<<std::endl;
 		cv::Mat ratio = (num/denum);
 		double firstZ = ratio.at<double>(0,0);
 		std::cout<<"firstz:"<<firstZ<<std::endl;
 		cv::Point3d pX3D = cv::Point3d((pX.at<double>(0,0)*firstZ),(double)(pY.at<double>(0,0)*firstZ),firstZ);
-		std::cout<<pX3D<<std::endl;
+		//std::cout<<pX3D<<std::endl;
 		cv::Mat pY3Dp = (R.t()*cv::Mat(pX3D)) - (R.t()*T);
 		cv::Point3d pY3D(pY3Dp.at<double>(0,0),pY3Dp.at<double>(0,1),pY3Dp.at<double>(0,2));
-		std::cout<<pY3D<<std::endl;
+		//std::cout<<pY3D<<std::endl;
 
 		if(pX3D.y<0 || pY3D.y<0)
 			return false;
@@ -39,12 +39,12 @@ bool viewMorphing::isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std:
 
 // public functions
 viewMorphing::viewMorphing(){
-	cv::namedWindow("Frame X",1);
-	cv::namedWindow("Frame Y",1);
+	//cv::namedWindow("Frame X",1);
+	//cv::namedWindow("Frame Y",1);
 	cv::namedWindow("Warped Frame X",1);
 	cv::namedWindow("Warped Frame Y",1);
-	cv::namedWindow("Frame X Gray",1);
-	cv::namedWindow("Frame Y Gray",1);
+	//cv::namedWindow("Frame X Gray",1);
+	//cv::namedWindow("Frame Y Gray",1);
 	cv::namedWindow("Frame X Undistorted",1);
 	cv::namedWindow("Frame Y Undistorted",1);
 	rng(12345);
@@ -53,12 +53,12 @@ viewMorphing::viewMorphing(){
 }
 
 viewMorphing::viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, bool isVerbose){
-	cv::namedWindow("Frame X",1);
-	cv::namedWindow("Frame Y",1);
+	//cv::namedWindow("Frame X",1);
+	//cv::namedWindow("Frame Y",1);
 	cv::namedWindow("Warped Frame X",1);
 	cv::namedWindow("Warped Frame Y",1);
-	cv::namedWindow("Frame X Gray",1);
-	cv::namedWindow("Frame Y Gray",1);
+	//cv::namedWindow("Frame X Gray",1);
+	//cv::namedWindow("Frame Y Gray",1);
 	cv::namedWindow("Frame X Undistorted",1);
 	cv::namedWindow("Frame Y Undistorted",1);
 	rng(12345);
@@ -76,10 +76,10 @@ viewMorphing::~viewMorphing(){
 }
 
 void viewMorphing::displayFrames(){
-	cv::imshow("Frame X",frameX);
-	cv::imshow("Frame Y",frameY);
-	cv::imshow("Frame X Gray", frameGrayX);
-	cv::imshow("Frame Y Gray", frameGrayY);
+	//cv::imshow("Frame X",frameX);
+	//cv::imshow("Frame Y",frameY);
+	//cv::imshow("Frame X Gray", frameGrayX);
+	//cv::imshow("Frame Y Gray", frameGrayY);
 	cv::imshow("Frame X Undistorted", frameXUndistorted);
 	cv::imshow("Frame Y Undistorted", frameYUndistorted);
 	cv::waitKey(0);
@@ -202,28 +202,23 @@ void viewMorphing::preWarp(){
 	cv::Mat R1, R2, P1, P2, Q, mapx1, mapx2, mapy1, mapy2;
 	cv::Mat rectX, rectY;
 	std::cout<<"ROT: "<<std::endl<<Rot<<"T: "<<std::endl<<T<<std::endl;
-	cv::stereoRectify(intrinsicX, distortionCoeffs, intrinsicY, distortionCoeffs, frameX.size(), Rot, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 0); //, cv::Size(), &validROI[0], &validROI[1]);
-//	std::cout<<"R1:"<<std::endl;
-//	std::cout<<R1<<std::endl;
-//	std::cout<<"R2:"<<std::endl;
-//	std::cout<<R2<<std::endl;
-//	std::cout<<"P1:"<<std::endl;
-//	std::cout<<P1<<std::endl;
-//	std::cout<<"P2:"<<std::endl;
-//	std::cout<<P2<<std::endl;
-//	std::cout<<"Q:"<<std::endl;
-//	std::cout<<Q<<std::endl;
-	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffs, R1, cv::Mat(), frameX.size(), CV_32FC1, mapx1, mapy1);
-	cv::initUndistortRectifyMap(intrinsicY, distortionCoeffs, R2, cv::Mat(), frameX.size(), CV_32FC1, mapx2, mapy2);
+	cv::stereoRectify(intrinsicX, distortionCoeffs, intrinsicY, distortionCoeffs, frameX.size(), Rot, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1); //, cv::Size(), &validROI[0], &validROI[1]);
+	std::cout<<"R1:"<<std::endl;
+	std::cout<<R1<<std::endl;
+	std::cout<<"R2:"<<std::endl;
+	std::cout<<R2<<std::endl;
 
-	cv::remap(frameX, rectX, mapx1, mapy1, CV_INTER_LINEAR);
-	cv::remap(frameY, rectY, mapx2, mapy2, CV_INTER_LINEAR);
+	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffs, R1, P1, frameX.size(), CV_16SC2, mapx1, mapy1);
+	cv::initUndistortRectifyMap(intrinsicY, distortionCoeffs, R2, P2, frameX.size(), CV_16SC2, mapx2, mapy2);
+
+	cv::remap(frameXUndistorted, rectX, mapx1, mapy1, CV_INTER_LINEAR);
+	cv::remap(frameYUndistorted, rectY, mapx2, mapy2, CV_INTER_LINEAR);
 
 	//cv::warpPerspective(frameX,rectX,R1,frameX.size());
 	//cv::warpPerspective(frameY,rectY,R2,frameY.size());
 
-	cv::imshow("asd1", rectX);
-	cv::imshow("asd2", rectY);
+	cv::imshow("Warped Frame X", rectX);
+	cv::imshow("Warped Frame Y", rectY);
 }
 
 void viewMorphing::interpolate(){
@@ -236,7 +231,7 @@ void viewMorphing::postWarp(){
 
 void viewMorphing::uncalibratedRect(){
 	cv::Mat H1,H2,preWrappedLeft1,preWrappedRight1;
-	std::cout<<matchedKeyPointCoordinatesX.size()<<"  "<<matchedKeyPointCoordinatesY.size()<<std::endl;
+	//std::cout<<matchedKeyPointCoordinatesX.size()<<"  "<<matchedKeyPointCoordinatesY.size()<<std::endl;
 	cv::stereoRectifyUncalibrated(matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY, F, frameX.size(), H1, H2);
 	cv::warpPerspective(frameX, preWrappedLeft1, H1, frameX.size());
 	cv::warpPerspective(frameY, preWrappedRight1, H2, frameX.size());
