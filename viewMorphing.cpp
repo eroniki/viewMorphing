@@ -93,7 +93,7 @@ int main(){
 	// Rectify both input images to make them on the same plane.
 	// In^ = In*inverse(Hn)
 	myMorph.preWarp();
-
+//	myMorph.uncalibratedRect();
 // TODO Do it step by step
 //	myMorph.interpolate();
 //	myMorph.postWarp();
