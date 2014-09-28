@@ -149,11 +149,10 @@ void viewMorphing::decomposeEssentialMatrix(){
 	cv::Mat_<double> t = svd_u.col(2); //u3
 
 	// TODO Revise here. Is it really needed?
-	// <here>
-	P1 = cv::Matx34f(R(0,0),R(0,1),R(0,2),t(0),
-	             R(1,0),R(1,1),R(1,2),t(1),
-	             R(2,0),R(2,1),R(2,2),t(2));
-	// </here>
+//	P1 = cv::Matx34f(R(0,0),R(0,1),R(0,2),t(0),
+//	             R(1,0),R(1,1),R(1,2),t(1),
+//	             R(2,0),R(2,1),R(2,2),t(2));
+
 	std::vector<cv::Point3d> inlierX;
 	std::vector<cv::Point3d> inlierY;
 	for(unsigned int i=0; i<mask.total(); i++){

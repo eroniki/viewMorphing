@@ -28,6 +28,8 @@ class viewMorphing{
 	cv::Mat descriptorsX, descriptorsY;
 	cv::Mat intrinsicXInverse, intrinsicYInverse;
 	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
+	cv::Mat mask; // mask for validate fundamental matrix
+	//cv::Matx34f P1; // Projection Matrix
 	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
 	std::vector<cv::KeyPoint> keypointsX, keypointsY;
 	std::vector<cv::DMatch> matches, good_matches;
@@ -42,8 +44,7 @@ public:
 	cv::Mat frameGrayX, frameGrayY;
 	cv::Mat frameXUndistorted, frameYUndistorted;
 	cv::Mat E, F; // Essential and Fundamental Matrix
-	cv::Matx34f P1; // Projection Matrix
-	cv::Mat Rot, T; // Rotation and translation
+	cv::Mat Rot, T; // Relative Rotation and translation between two cameras.
 	viewMorphing();
 	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, bool isVerbose = false);
 	~viewMorphing();
