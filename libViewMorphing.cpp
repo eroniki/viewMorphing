@@ -92,6 +92,7 @@ void viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessi
 	cv::SurfFeatureDetector detector(minHessian);
 	detector.detect(frameX, keypointsX);
 	detector.detect(frameY, keypointsY);
+	std::cout<<"X keypoint size: "<<keypointsX.size()<<" Y keypoint size: "<<keypointsY.size()<<std::endl;
 }
 
 void viewMorphing::featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY){
@@ -104,6 +105,7 @@ void viewMorphing::featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY){
 int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 	matcher.match(descriptorsX, descriptorsY, matches);
 	// TODO Make a proper threshold for this variable, try.. except..
+	std::cout<<"Matches: "<<matches.size()<<std::endl;
 	if(matches.size()<100)
 		return -1;
 
@@ -123,20 +125,28 @@ int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 		drawMatches(frameXUndistorted, keypointsX, frameYUndistorted, keypointsY, good_matches, frameMatches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 		imshow("Matching Keypoints",frameMatches);
 	}
-
 	for(int i = 0; i < (int)good_matches.size(); i++){
 		matchedKeyPointCoordinatesX.push_back(keypointsX[good_matches[i].queryIdx].pt);
 		matchedKeyPointCoordinatesY.push_back(keypointsX[good_matches[i].trainIdx].pt);
 	}
+
+//	for(int i = 0; i < (int)matches.size(); i++){
+//		matchedKeyPointCoordinatesX.push_back(keypointsX[matches[i].queryIdx].pt);
+//		matchedKeyPointCoordinatesY.push_back(keypointsX[matches[i].trainIdx].pt);
+//	}
+	std::cout<<"Good Matches: "<<good_matches.size()<<std::endl;
 	return good_matches.size();
 }
 
 void viewMorphing::getFundamentalMatrix(){
+	std::cout<<"Matched X:"<<matchedKeyPointCoordinatesX.size()<<std::endl;
 	F = findFundamentalMat(matchedKeyPointCoordinatesX,matchedKeyPointCoordinatesY,mask);
+	std::cout<<"F: "<<F<<std::endl;
 }
 
 void viewMorphing::getEssentialMatrix(){
 	E = intrinsicX.t()*F*intrinsicX;
+	std::cout<<"E: "<<E<<std::endl;
 }
 
 void viewMorphing::decomposeEssentialMatrix(){

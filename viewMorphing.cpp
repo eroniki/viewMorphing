@@ -73,7 +73,7 @@ int main(){
 	// Pre-proccessing before warping. Undistort images, make them gray scale and produce 3 channel gray images.
 	myMorph.initMorph();
 	// Find features
-	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
+	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,300);
 	// Extract descriptors
 	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
 	// Match features

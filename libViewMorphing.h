@@ -29,7 +29,6 @@ class viewMorphing{
 	cv::Mat intrinsicXInverse, intrinsicYInverse;
 	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
 	cv::Mat mask; // mask for validate fundamental matrix
-	//cv::Matx34f P1; // Projection Matrix
 	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
 	std::vector<cv::KeyPoint> keypointsX, keypointsY;
 	std::vector<cv::DMatch> matches, good_matches;

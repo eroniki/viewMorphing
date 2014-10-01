@@ -43,49 +43,50 @@ print "Matches: %d" %len(matches)
 # generate lists of point correspondences
 first_match_points = np.zeros((len(matches), 2), dtype=np.float32)
 second_match_points = np.zeros_like(first_match_points)
+
 for i in range(len(matches)):
     first_match_points[i] = first_key_points[matches[i].queryIdx].pt
     second_match_points[i] = second_key_points[matches[i].trainIdx].pt
-
+cv2.stereoCalibrate(,first_match_points,second_match_points,)
 # estimate fundamental matrix
-F, mask = cv2.findFundamentalMat(first_match_points, second_match_points, cv2.FM_RANSAC, 0.1, 0.99)
-print "F: " , F, "\r\n"
+#F, mask = cv2.findFundamentalMat(first_match_points, second_match_points, cv2.FM_RANSAC, 0.1, 0.99)
+#print "F: " , F, "\r\n"
 # decompose into the essential matrix
-E = K.T.dot(F).dot(K)
-print "E: ", E, "\r\n"
+#E = K.T.dot(F).dot(K)
+#print "E: ", E, "\r\n"
 # decompose essential matrix into R, t (See Hartley and Zisserman 9.13)
-U, S, Vt = np.linalg.svd(E)
-W = np.array([0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]).reshape(3, 3)
+#U, S, Vt = np.linalg.svd(E)
+#W = np.array([0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]).reshape(3, 3)
 
 # iterate over all point correspondences used in the estimation of the fundamental matrix
-first_inliers = []
-second_inliers = []
-for i in range(len(mask)):
-    if mask[i]:
-        # normalize and homogenize the image coordinates
-        first_inliers.append(K_inv.dot([first_match_points[i][0], first_match_points[i][1], 1.0]))
-        second_inliers.append(K_inv.dot([second_match_points[i][0], second_match_points[i][1], 1.0]))
+#first_inliers = []
+#second_inliers = []
+#for i in range(len(mask)):
+#    if mask[i]:
+#        # normalize and homogenize the image coordinates
+#        first_inliers.append(K_inv.dot([first_match_points[i][0], first_match_points[i][1], 1.0]))
+#        second_inliers.append(K_inv.dot([second_match_points[i][0], second_match_points[i][1], 1.0]))
 
 # Determine the correct choice of second camera matrix
 # only in one of the four configurations will all the points be in front of both cameras
 # First choice: R = U * Wt * Vt, T = +u_3 (See Hartley Zisserman 9.19)
-R = U.dot(W).dot(Vt)
-T = U[:, 2]
-print "Deneme: +"
-
-if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
-    print "+"
-    # Second choice: R = U * W * Vt, T = -u_3
-    T = - U[:, 2]
-    if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
-        print "+"
-        # Third choice: R = U * Wt * Vt, T = u_3
-        R = U.dot(W.T).dot(Vt)
-        T = U[:, 2]
-        print "+"
-        if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
-            # Fourth choice: R = U * Wt * Vt, T = -u_3
-            T = - U[:, 2]
+#R = U.dot(W).dot(Vt)
+#T = U[:, 2]
+#print "Deneme: +"
+#
+#if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
+#    print "+"
+#    # Second choice: R = U * W * Vt, T = -u_3
+#    T = - U[:, 2]
+#    if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
+#        print "+"
+#        # Third choice: R = U * Wt * Vt, T = u_3
+#        R = U.dot(W.T).dot(Vt)
+#        T = U[:, 2]
+#        print "+"
+#        if not in_front_of_both_cameras(first_inliers, second_inliers, R, T):
+#            # Fourth choice: R = U * Wt * Vt, T = -u_3
+#            T = - U[:, 2]
 print "\r\n"
 #perform the rectification
 R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(K, d, K2, d, first_img.shape[:2], R, T, alpha=1.0)
