@@ -25,6 +25,7 @@ using namespace cv;
 
 stereoVision cameraX;
 stereoVision cameraY;
+unsigned long *nFeature;
 
 const int alpha_slider_max = 100;
 const int beta_slider_max = 100;
@@ -73,28 +74,37 @@ int main(){
 //	sprintf(betaBarText, "Beta x %d", beta_slider_max);
 //	createTrackbar(alphaBarText, "Linear Interpolation", &alpha_slider, alpha_slider_max, on_trackbar);
 //	createTrackbar(betaBarText, "Linear Interpolation", &beta_slider, beta_slider_max, on_trackbar);
+
 	// Pre-proccessing before warping. Undistort images, make them gray scale and produce 3 channel gray images.
 	myMorph.initMorph();
+
 	// Find features
-	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
+	nFeature = myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
+	cout<<"1: "<<nFeature[0]<<" 2: "<<nFeature[1]<<endl;
+
 	// Extract descriptors
 	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
-	//std::cout<<"X keypoint size: "<<keypointsX.size()<<" Y keypoint size: "<<keypointsY.size()<<std::endl;
-	// Match features
+
 // TODO Make a proper threshold for this variable, try.. except..
-	int goodMatches = myMorph.featureMatcher(0,100,true);
-	cout<<"Good Matches: "<<goodMatches<<endl;
+	// Match features
+	int nGoodMatches = myMorph.featureMatcher(0,100,true);
+	cout<<"Good Matches: "<<nGoodMatches<<endl;
+
 	// Check if there is enough matching features or not to proceed.
-	if(goodMatches<10){
+	if(nGoodMatches<10){
 		cerr<<"Couldn't find enough matching keypoints."<<endl;
 		return -2;
 	}
+
 	// Use matching features to estimate fundamental matrix (F)
 	myMorph.getFundamentalMatrix();
+
 	// Get Essential matrix (E) from F
 	myMorph.getEssentialMatrix();
+
 	// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
 	myMorph.decomposeEssentialMatrix();
+
 	// Rectify both input images to make them on the same plane.
 	// In^ = In*inverse(Hn)
 	myMorph.preWarp();
@@ -103,6 +113,7 @@ int main(){
 //	myMorph.interpolate();
 //	myMorph.postWarp();
 
+	// Show frames
 	myMorph.displayFrames();
 	return 0;
 }

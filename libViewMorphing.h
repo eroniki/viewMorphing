@@ -74,7 +74,7 @@ public:
 	viewMorphing(stereoVision X, stereoVision Y, bool isVerobose);
 	~viewMorphing();
 	void displayFrames();
-	void featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);
+	unsigned long* featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);
 	void featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY);
 	int featureMatcher(double maxDist=0, double minDist=100, bool draw = false);
 	void getFundamentalMatrix();

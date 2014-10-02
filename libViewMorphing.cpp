@@ -73,8 +73,10 @@ viewMorphing::viewMorphing(stereoVision X, stereoVision Y, bool isVerbose){
 	cv::namedWindow("Frame X Undistorted",1);
 	cv::namedWindow("Frame Y Undistorted",1);
 	rng(12345);
+	verbose = isVerbose;
 	std::cout<<"Constructing View Morphing.."<<std::endl;
 }
+
 viewMorphing::~viewMorphing(){
 	std::cout<<"Deconstructor of cameraCalibration Class.."<<std::endl;
 }
@@ -92,10 +94,12 @@ void viewMorphing::displayFrames(){
 //cv::imshow("Warped Frame Y", warpedFrameY);
 }
 
-void viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian){
+unsigned long* viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian){
 	cv::SurfFeatureDetector detector(minHessian);
 	detector.detect(frameX, keypointsX);
 	detector.detect(frameY, keypointsY);
+	unsigned long sizes[2] = {keypointsX.size(),keypointsY.size()};
+	return sizes;
 }
 
 void viewMorphing::featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY){
@@ -109,8 +113,10 @@ int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 	matcher.match(descriptorsX, descriptorsY, matches);
 	// TODO Make a proper threshold for this variable, try.. except..
 	std::cout<<"Matches: "<<matches.size()<<std::endl;
-	if(matches.size()<100)
+	if(matches.size()<100){
+		std::cerr<<"Not Enough matches between key points."<<std::endl;
 		return -1;
+	}
 
 	for(int i = 0; i < descriptorsX.rows; i++){
 		double dist = matches[i].distance;
@@ -126,7 +132,7 @@ int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 	}
 	if(draw){
 		drawMatches(frameXUndistorted, keypointsX, frameYUndistorted, keypointsY, good_matches, frameMatches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imshow("Matching Keypoints",frameMatches);
+		imshow("Matching Key Points",frameMatches);
 	}
 	for(int i = 0; i < (int)good_matches.size(); i++){
 		matchedKeyPointCoordinatesX.push_back(keypointsX[good_matches[i].queryIdx].pt);
