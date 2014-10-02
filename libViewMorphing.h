@@ -21,6 +21,31 @@
 #ifndef LIBVIEWMORPHING_H_
 #define LIBVIEWMORPHING_H_
 
+struct stereoVision{
+  unsigned int _whichCamera;
+  unsigned int _keypointSize;
+  unsigned int _featureSize;
+  unsigned int _descriptorSize;
+  cv::Mat _F;
+  cv::Mat _E;
+  cv::Mat _intrinsic;
+  cv::Mat _distortion;
+  cv::Mat _projection;
+  cv::Mat R;
+  cv::Mat t;
+  // frames
+  cv::Mat _frame;
+  cv::Mat _frameGray;
+  cv::Mat _frameGray3Channels;
+  cv::Mat _frameUndistorted;
+  cv::Mat _preWarped;
+  // key points, feature, descriptors
+  std::vector<cv::Point2f> _matchedKeypointsCoordinates;
+  std::vector<cv::KeyPoint> _keyPoints;
+  std::vector<cv::DMatch> _matches;
+  std::vector<cv::Point3f> _lines;
+};
+
 class viewMorphing{
 // XXX Add Private Variables & Functions
 	bool verbose;
@@ -46,6 +71,7 @@ public:
 	cv::Mat Rot, T; // Relative Rotation and translation between two cameras.
 	viewMorphing();
 	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, bool isVerbose = false);
+	viewMorphing(stereoVision X, stereoVision Y, bool isVerobose);
 	~viewMorphing();
 	void displayFrames();
 	void featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);

@@ -23,6 +23,9 @@
 using namespace std;
 using namespace cv;
 
+stereoVision cameraX;
+stereoVision cameraY;
+
 const int alpha_slider_max = 100;
 const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
@@ -32,7 +35,7 @@ double intrinsicX[] ={1918.270000, 2.489820, 17.915, //intrinsic values
           	  	  	  0.0, 1922.580000, -63.736, //(320.264)
           	  	  	  0.0, 0.0, 1.0};
 
-double intrinsicY[] = {1909.910000,	0.571503, -33.069000, //intrinsic values
+double intrinsicY[] = {1909.910000,	0.571503, -33.069, //intrinsic values
 						0.0, 1915.890000, -10.306, // (394,306)
 						0.0, 0.0, 1.0};
 
@@ -73,12 +76,14 @@ int main(){
 	// Pre-proccessing before warping. Undistort images, make them gray scale and produce 3 channel gray images.
 	myMorph.initMorph();
 	// Find features
-	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,300);
+	myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
 	// Extract descriptors
 	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
+	//std::cout<<"X keypoint size: "<<keypointsX.size()<<" Y keypoint size: "<<keypointsY.size()<<std::endl;
 	// Match features
 // TODO Make a proper threshold for this variable, try.. except..
 	int goodMatches = myMorph.featureMatcher(0,100,true);
+	cout<<"Good Matches: "<<goodMatches<<endl;
 	// Check if there is enough matching features or not to proceed.
 	if(goodMatches<10){
 		cerr<<"Couldn't find enough matching keypoints."<<endl;

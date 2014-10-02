@@ -12,23 +12,15 @@ bool viewMorphing::isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std:
 	for(unsigned int i=0;i<inlierX.size();i++){
 		cv::Mat pX(inlierX.at(i));
 		cv::Mat pY(inlierY.at(i));
-		//std::cout<<"R "<<R<<std::endl<<"T: "<<T<<std::endl;
-		// np.dot(rot[0, :] - second[0]*rot[2, :], trans)
 		cv::Mat num = (R.row(0)-pY.at<double>(0,0)*R.row(2))*T;
-		//std::cout<<"px: "<<pX<<std::endl;
-		//std::cout<<"py: "<<pY<<std::endl;
-		//std::cout<<"num: "<<num<<std::endl;
-		//np.dot(rot[0, :] - second[0]*rot[2, :], second)
 		cv::Mat denum = (R.row(0)-pY.at<double>(0,0)*R.row(2))*pY;
-		//std::cout<<"denum:"<<denum<<std::endl;
 		cv::Mat ratio = (num/denum);
+
 		double firstZ = ratio.at<double>(0,0);
-		//std::cout<<"firstz:"<<firstZ<<std::endl;
 		cv::Point3d pX3D = cv::Point3d((pX.at<double>(0,0)*firstZ),(double)(pY.at<double>(0,0)*firstZ),firstZ);
-		//std::cout<<pX3D<<std::endl;
+
 		cv::Mat pY3Dp = (R.t()*cv::Mat(pX3D)) - (R.t()*T);
 		cv::Point3d pY3D(pY3Dp.at<double>(0,0),pY3Dp.at<double>(0,1),pY3Dp.at<double>(0,2));
-		//std::cout<<pY3D<<std::endl;
 
 		if(pX3D.y<0 || pY3D.y<0)
 			return false;
@@ -71,6 +63,18 @@ viewMorphing::viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, 
 	std::cout<<"Constructing View Morphing.."<<std::endl;
 }
 
+viewMorphing::viewMorphing(stereoVision X, stereoVision Y, bool isVerbose){
+	//cv::namedWindow("Frame X",1);
+	//cv::namedWindow("Frame Y",1);
+	cv::namedWindow("Warped Frame X",1);
+	cv::namedWindow("Warped Frame Y",1);
+	//cv::namedWindow("Frame X Gray",1);
+	//cv::namedWindow("Frame Y Gray",1);
+	cv::namedWindow("Frame X Undistorted",1);
+	cv::namedWindow("Frame Y Undistorted",1);
+	rng(12345);
+	std::cout<<"Constructing View Morphing.."<<std::endl;
+}
 viewMorphing::~viewMorphing(){
 	std::cout<<"Deconstructor of cameraCalibration Class.."<<std::endl;
 }
@@ -92,7 +96,6 @@ void viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessi
 	cv::SurfFeatureDetector detector(minHessian);
 	detector.detect(frameX, keypointsX);
 	detector.detect(frameY, keypointsY);
-	std::cout<<"X keypoint size: "<<keypointsX.size()<<" Y keypoint size: "<<keypointsY.size()<<std::endl;
 }
 
 void viewMorphing::featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY){
@@ -130,16 +133,10 @@ int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
 		matchedKeyPointCoordinatesY.push_back(keypointsX[good_matches[i].trainIdx].pt);
 	}
 
-//	for(int i = 0; i < (int)matches.size(); i++){
-//		matchedKeyPointCoordinatesX.push_back(keypointsX[matches[i].queryIdx].pt);
-//		matchedKeyPointCoordinatesY.push_back(keypointsX[matches[i].trainIdx].pt);
-//	}
-	std::cout<<"Good Matches: "<<good_matches.size()<<std::endl;
 	return good_matches.size();
 }
 
 void viewMorphing::getFundamentalMatrix(){
-	std::cout<<"Matched X:"<<matchedKeyPointCoordinatesX.size()<<std::endl;
 	F = findFundamentalMat(matchedKeyPointCoordinatesX,matchedKeyPointCoordinatesY,mask);
 	std::cout<<"F: "<<F<<std::endl;
 }
