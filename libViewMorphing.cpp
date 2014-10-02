@@ -94,11 +94,12 @@ void viewMorphing::displayFrames(){
 //cv::imshow("Warped Frame Y", warpedFrameY);
 }
 
-unsigned long* viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian){
+std::vector<unsigned int> viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian){
 	cv::SurfFeatureDetector detector(minHessian);
 	detector.detect(frameX, keypointsX);
 	detector.detect(frameY, keypointsY);
-	unsigned long sizes[2] = {keypointsX.size(),keypointsY.size()};
+	unsigned int size[2]= {keypointsX.size(),keypointsY.size()};
+	std::vector<unsigned int> sizes(size, size + sizeof(size)/sizeof(unsigned int));
 	return sizes;
 }
 

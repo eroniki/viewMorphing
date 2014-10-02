@@ -23,10 +23,6 @@
 using namespace std;
 using namespace cv;
 
-stereoVision cameraX;
-stereoVision cameraY;
-unsigned long *nFeature;
-
 const int alpha_slider_max = 100;
 const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
@@ -58,6 +54,8 @@ int main(){
 	Mat intrinsicMatrixY(3, 3, CV_64F, intrinsicY); // intrinsic matrix
 
 	viewMorphing myMorph(intrinsicMatrixX,intrinsicMatrixY, distortion);
+	myMorph.stereoVision cameraX;
+	myMorph.stereoVision cameraY;
 
 	myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam0/color-cam0-f000.jpg",1);
 	myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
@@ -79,8 +77,8 @@ int main(){
 	myMorph.initMorph();
 
 	// Find features
-	nFeature = myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
-	cout<<"1: "<<nFeature[0]<<" 2: "<<nFeature[1]<<endl;
+	std::vector<unsigned int> nFeature = myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
+	cout<<"1: "<<nFeature.at(0)<<" 2: "<<nFeature.at(1)<<endl;
 
 	// Extract descriptors
 	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);

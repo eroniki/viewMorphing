@@ -21,31 +21,6 @@
 #ifndef LIBVIEWMORPHING_H_
 #define LIBVIEWMORPHING_H_
 
-struct stereoVision{
-  unsigned int _whichCamera;
-  unsigned int _keypointSize;
-  unsigned int _featureSize;
-  unsigned int _descriptorSize;
-  cv::Mat _F;
-  cv::Mat _E;
-  cv::Mat _intrinsic;
-  cv::Mat _distortion;
-  cv::Mat _projection;
-  cv::Mat R;
-  cv::Mat t;
-  // frames
-  cv::Mat _frame;
-  cv::Mat _frameGray;
-  cv::Mat _frameGray3Channels;
-  cv::Mat _frameUndistorted;
-  cv::Mat _preWarped;
-  // key points, feature, descriptors
-  std::vector<cv::Point2f> _matchedKeypointsCoordinates;
-  std::vector<cv::KeyPoint> _keyPoints;
-  std::vector<cv::DMatch> _matches;
-  std::vector<cv::Point3f> _lines;
-};
-
 class viewMorphing{
 // XXX Add Private Variables & Functions
 	bool verbose;
@@ -63,6 +38,30 @@ class viewMorphing{
 	bool isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T);
 public:
 	// XXX Add Public Variables & Functions
+	struct stereoVision{
+	  unsigned int _whichCamera;
+	  unsigned int _keypointSize;
+	  unsigned int _featureSize;
+	  unsigned int _descriptorSize;
+	  cv::Mat _F;
+	  cv::Mat _E;
+	  cv::Mat _intrinsic;
+	  cv::Mat _distortion;
+	  cv::Mat _projection;
+	  cv::Mat R;
+	  cv::Mat t;
+	  // frames
+	  cv::Mat _frame;
+	  cv::Mat _frameGray;
+	  cv::Mat _frameGray3Channels;
+	  cv::Mat _frameUndistorted;
+	  cv::Mat _preWarped;
+	  // key points, feature, descriptors
+	  std::vector<cv::Point2f> _matchedKeypointsCoordinates;
+	  std::vector<cv::KeyPoint> _keyPoints;
+	  std::vector<cv::DMatch> _matches;
+	  std::vector<cv::Point3f> _lines;
+	};
 	cv::Mat warpedFrameX, warpedFrameY;
 	cv::Mat frameX, frameY;
 	cv::Mat frameGrayX, frameGrayY;
@@ -74,7 +73,7 @@ public:
 	viewMorphing(stereoVision X, stereoVision Y, bool isVerobose);
 	~viewMorphing();
 	void displayFrames();
-	unsigned long* featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);
+	std::vector<unsigned int> featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);
 	void featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY);
 	int featureMatcher(double maxDist=0, double minDist=100, bool draw = false);
 	void getFundamentalMatrix();
