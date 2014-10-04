@@ -28,15 +28,24 @@ const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
 double alpha, beta;
 
-double intrinsicX[] ={1918.270000, 2.489820, 17.915, //intrinsic values
-          	  	  	  0.0, 1922.580000, -63.736, //(320.264)
+//double intrinsicX[] ={1918.270000, 2.489820, 17.915, //intrinsic values
+//          	  	  	  0.0, 1922.580000, -63.736, //(320.264)
+//          	  	  	  0.0, 0.0, 1.0};
+//
+//double intrinsicY[] = {1909.910000,	0.571503, -33.069, //intrinsic values
+//						0.0, 1915.890000, -10.306, // (394,306)
+//						0.0, 0.0, 1.0};
+
+double intrinsicX[] ={534.71330014574596, 0, 335.13862534129095, //intrinsic values
+          	  	  	  0.0, 534.71330014574596, 240.20611211620974, //(320.264)
           	  	  	  0.0, 0.0, 1.0};
 
-double intrinsicY[] = {1909.910000,	0.571503, -33.069, //intrinsic values
-						0.0, 1915.890000, -10.306, // (394,306)
+double intrinsicY[] = {534.71330014574596,	0., 334.01539789486719, //intrinsic values
+						0.0, 534.71330014574596, 241.590467217259776, // (394,306)
 						0.0, 0.0, 1.0};
 
-double dist[] = {-0.0, 0.0, -0.0, 0.0, 0.00000};	//distortion coeff's
+double distX[] = {-0.27456948645081880, -0.018313659520296389, 0., 0., 0., 0., 0., -0.24476896009779484};	//distortion coeff's
+double distY[] = {0.28073637369061943, 0.093010333969654108, 0., 0., 0., 0., 0., 0.016329629645783102};	//distortion coeff's
 
 char alphaBarText[50];
 char betaBarText[50];
@@ -49,16 +58,19 @@ void on_trackbar(int, void*){
 }
 
 int main(){
-	Mat distortion(1, 5, CV_64F, dist);	 // distortion coeff's
+	Mat distortionX(1, 8, CV_64F, distX);	 // distortion coeff's
+	Mat distortionY(1, 8, CV_64F, distY);	 // distortion coeff's
 	Mat intrinsicMatrixX(3, 3, CV_64F, intrinsicX); // intrinsic matrix
 	Mat intrinsicMatrixY(3, 3, CV_64F, intrinsicY); // intrinsic matrix
 
-	viewMorphing myMorph(intrinsicMatrixX,intrinsicMatrixY, distortion);
-	myMorph.stereoVision cameraX;
-	myMorph.stereoVision cameraY;
+	viewMorphing myMorph(intrinsicMatrixX,intrinsicMatrixY, distortionX, distortionY);
+	stereoVision cameraX, cameraY;
 
-	myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam0/color-cam0-f000.jpg",1);
-	myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
+	//myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam0/color-cam0-f000.jpg",1);
+	//myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
+
+	myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/left.jpg",1);
+	myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/right.jpg",1);
 
 	if(!myMorph.frameX.data || !myMorph.frameY.data){
 		cerr<<"Image could loaded!"<<endl;
@@ -108,7 +120,7 @@ int main(){
 	myMorph.preWarp();
 
 // TODO Uncomment
-//	myMorph.uncalibratedRect();
+	myMorph.uncalibratedRect();
 
 // TODO Next Steps
 //	myMorph.interpolate();

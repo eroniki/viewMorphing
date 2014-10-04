@@ -21,24 +21,7 @@
 #ifndef LIBVIEWMORPHING_H_
 #define LIBVIEWMORPHING_H_
 
-class viewMorphing{
-// XXX Add Private Variables & Functions
-	bool verbose;
-	cv::Mat intrinsicX, intrinsicY, distortionCoeffs; // Intrinsic Matrixes
-	cv::Mat descriptorsX, descriptorsY;
-	cv::Mat intrinsicXInverse, intrinsicYInverse;
-	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
-	cv::Mat mask; // mask for validate fundamental matrix
-	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
-	std::vector<cv::KeyPoint> keypointsX, keypointsY;
-	std::vector<cv::DMatch> matches, good_matches;
-	std::vector<cv::Point3f> linesX, linesY;
-	cv::RNG rng;
-	cv::FlannBasedMatcher matcher;
-	bool isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T);
-public:
-	// XXX Add Public Variables & Functions
-	struct stereoVision{
+struct stereoVision{
 	  unsigned int _whichCamera;
 	  unsigned int _keypointSize;
 	  unsigned int _featureSize;
@@ -62,6 +45,24 @@ public:
 	  std::vector<cv::DMatch> _matches;
 	  std::vector<cv::Point3f> _lines;
 	};
+
+class viewMorphing{
+// XXX Add Private Variables & Functions
+	bool verbose;
+	cv::Mat intrinsicX, intrinsicY, distortionCoeffsX,distortionCoeffsY; // Intrinsic Matrixes
+	cv::Mat descriptorsX, descriptorsY;
+	cv::Mat intrinsicXInverse, intrinsicYInverse;
+	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
+	cv::Mat mask; // mask for validate fundamental matrix
+	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
+	std::vector<cv::KeyPoint> keypointsX, keypointsY;
+	std::vector<cv::DMatch> matches, good_matches;
+	std::vector<cv::Point3f> linesX, linesY;
+	cv::RNG rng;
+	cv::FlannBasedMatcher matcher;
+	bool isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T);
+public:
+	// XXX Add Public Variables & Functions
 	cv::Mat warpedFrameX, warpedFrameY;
 	cv::Mat frameX, frameY;
 	cv::Mat frameGrayX, frameGrayY;
@@ -69,7 +70,7 @@ public:
 	cv::Mat E, F; // Essential and Fundamental Matrix
 	cv::Mat Rot, T; // Relative Rotation and translation between two cameras.
 	viewMorphing();
-	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeff, bool isVerbose = false);
+	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeffX, cv::Mat distortionCoeffY, bool isVerbose = false);
 	viewMorphing(stereoVision X, stereoVision Y, bool isVerobose);
 	~viewMorphing();
 	void displayFrames();
