@@ -31,131 +31,96 @@ bool viewMorphing::isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std:
 
 // public functions
 viewMorphing::viewMorphing(){
-	//cv::namedWindow("Frame X",1);
-	//cv::namedWindow("Frame Y",1);
-	cv::namedWindow("Warped Frame X",1);
-	cv::namedWindow("Warped Frame Y",1);
-	//cv::namedWindow("Frame X Gray",1);
-	//cv::namedWindow("Frame Y Gray",1);
-	cv::namedWindow("Frame X Undistorted",1);
-	cv::namedWindow("Frame Y Undistorted",1);
-	rng(12345);
-	verbose = false;
 	std::cout<<"Constructing View Morphing.."<<std::endl;
 }
 
-viewMorphing::viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeffX, cv::Mat distortionCoeffY, bool isVerbose){
-	//cv::namedWindow("Frame X",1);
-	//cv::namedWindow("Frame Y",1);
-	cv::namedWindow("Warped Frame X",1);
-	cv::namedWindow("Warped Frame Y",1);
-	//cv::namedWindow("Frame X Gray",1);
-	//cv::namedWindow("Frame Y Gray",1);
-	cv::namedWindow("Frame X Undistorted",1);
-	cv::namedWindow("Frame Y Undistorted",1);
-	rng(12345);
-	verbose = isVerbose;
-	intrinsicX = intX.clone();
-	intrinsicY = intY.clone();
-	distortionCoeffsX = distortionCoeffX.clone();
-	distortionCoeffsY = distortionCoeffY.clone();
-	intrinsicXInverse = intrinsicX.inv();
-	intrinsicYInverse = intrinsicY.inv();
+viewMorphing::viewMorphing(stereoVision& _X, stereoVision& _Y){
 	std::cout<<"Constructing View Morphing.."<<std::endl;
-}
+	std::cout<<"Initializing Camera 0"<<std::endl;
+	_X.whichCamera = 0;
+	_X.frameSize = _X.frame.size();
+	_X.inverseIntrinsic = _X.intrinsic.inv();
 
-viewMorphing::viewMorphing(stereoVision X, stereoVision Y, bool isVerbose){
-	//cv::namedWindow("Frame X",1);
-	//cv::namedWindow("Frame Y",1);
-	cv::namedWindow("Warped Frame X",1);
-	cv::namedWindow("Warped Frame Y",1);
-	//cv::namedWindow("Frame X Gray",1);
-	//cv::namedWindow("Frame Y Gray",1);
-	cv::namedWindow("Frame X Undistorted",1);
-	cv::namedWindow("Frame Y Undistorted",1);
-	rng(12345);
-	verbose = isVerbose;
-	std::cout<<"Constructing View Morphing.."<<std::endl;
+	std::cout<<"Initializing Camera 1"<<std::endl;
+	_Y.whichCamera = 1;
+	_Y.frameSize = _Y.frame.size();
+	_Y.inverseIntrinsic = _Y.intrinsic.inv();
+
+	// Undistort frames to eliminate barrel distortion
+	cv::undistort(_X.frame, _X.frameUndistorted, _X.intrinsic, _X.distortion);
+	cv::undistort(_Y.frame, _Y.frameUndistorted, _Y.intrinsic, _Y.distortion);
+
+	// Produce Gray Images from Undistorted RGB ones for speed concerns.
+	cv::cvtColor(_X.frameUndistorted,_X.frameGray,CV_RGB2GRAY);
+	cv::cvtColor(_Y.frameUndistorted,_X.frameGray,CV_RGB2GRAY);
+	// Produce 3 channel Gray Images
+	cv::cvtColor(_X.frameGray,_X.frameGray3Channels,CV_GRAY2RGB);
+	cv::cvtColor(_Y.frameGray,_Y.frameGray3Channels,CV_GRAY2RGB);
+	std::cout<<"Construction is OK! Moving on..."<<std::endl;
 }
 
 viewMorphing::~viewMorphing(){
 	std::cout<<"Deconstructor of cameraCalibration Class.."<<std::endl;
 }
 
-void viewMorphing::displayFrames(){
-	//cv::imshow("Frame X",frameX);
-	//cv::imshow("Frame Y",frameY);
-	//cv::imshow("Frame X Gray", frameGrayX);
-	//cv::imshow("Frame Y Gray", frameGrayY);
-	cv::imshow("Frame X Undistorted", frameXUndistorted);
-	cv::imshow("Frame Y Undistorted", frameYUndistorted);
-	cv::waitKey(0);
-// TODO Show warped frames too.
-//cv::imshow("Warped Frame X", warpedFrameX);
-//cv::imshow("Warped Frame Y", warpedFrameY);
+void viewMorphing::featureDetection(stereoVision& _X, stereoVision& _Y, int _minHessian){
+	cv::SurfFeatureDetector _detector(_minHessian);
+	_detector.detect(_X.frameUndistorted, _X.keyPoints);
+	_detector.detect(_Y.frameUndistorted, _Y.keyPoints);
+
+	_X.keyPointSize = _X.keyPoints.size();
+	_Y.keyPointSize = _Y.keyPoints.size();
 }
 
-std::vector<unsigned int> viewMorphing::featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian){
-	cv::SurfFeatureDetector detector(minHessian);
-	detector.detect(frameX, keypointsX);
-	detector.detect(frameY, keypointsY);
-	unsigned int size[2]= {keypointsX.size(),keypointsY.size()};
-	std::vector<unsigned int> sizes(size, size + sizeof(size)/sizeof(unsigned int));
-	return sizes;
+void viewMorphing::featureDescriptorExtractor(stereoVision& _X, stereoVision& _Y){
+	cv::SurfDescriptorExtractor _extractor;
+
+	_extractor.compute(_X.frameUndistorted, _X.keyPoints, _X.descriptors);
+	_extractor.compute(_Y.frameUndistorted, _Y.keyPoints, _Y.descriptors);
 }
 
-void viewMorphing::featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY){
-	cv::SurfDescriptorExtractor extractor;
-
-	extractor.compute(frameX, keypointsX, descriptorsX);
-	extractor.compute(frameY, keypointsY, descriptorsY);
-}
-
-int viewMorphing::featureMatcher(double maxDist, double minDist, bool draw){
-	matcher.match(descriptorsX, descriptorsY, matches);
+void viewMorphing::featureMatcher(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters, double _minDist, double _maxDist){
+	cv::FlannBasedMatcher _matcher;
+	_parameters.matches.clear();
+	_parameters.goodMatches.clear();
+	_X.matchedKeyPointsCoordinates.clear();
+	_Y.matchedKeyPointsCoordinates.clear();
+	_matcher.match(_X.descriptors, _Y.descriptors, _parameters.matches);
 	// TODO Make a proper threshold for this variable, try.. except..
-	std::cout<<"Matches: "<<matches.size()<<std::endl;
-	if(matches.size()<100){
+
+	if(_parameters.matches.size()<100){
 		std::cerr<<"Not Enough matches between key points."<<std::endl;
-		return -1;
 	}
 
-	for(int i = 0; i < descriptorsX.rows; i++){
-		double dist = matches[i].distance;
-	    if(dist < minDist) minDist = dist;
-	    if(dist > maxDist) maxDist = dist;
+	for(int i = 0; i < _X.descriptors.rows; i++){
+		double dist = _parameters.matches[i].distance;
+	    if(dist < _minDist) _minDist = dist;
+	    if(dist > _maxDist) _maxDist = dist;
 	}
 
-	for(int i = 0; i < descriptorsX.rows; i++){
+	for(int i = 0; i < _X.descriptors.rows; i++){
 		//TODO A heuristic approach needed for setting this scale. Change algorithm into recursive one.
-		if(matches[i].distance < 4*minDist){
-			good_matches.push_back(matches[i]);
+		if(_parameters.matches[i].distance < 4*_minDist){
+			_parameters.goodMatches.push_back(_parameters.matches[i]);
 		}
 	}
-	if(draw){
-		drawMatches(frameXUndistorted, keypointsX, frameYUndistorted, keypointsY, good_matches, frameMatches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imshow("Matching Key Points",frameMatches);
+
+	for(int i = 0; i < (int)_parameters.goodMatches.size(); i++){
+		_X.matchedKeyPointsCoordinates.push_back(_X.keyPoints[_parameters.goodMatches[i].queryIdx].pt);
+		_Y.matchedKeyPointsCoordinates.push_back(_Y.keyPoints[_parameters.goodMatches[i].trainIdx].pt);
 	}
-	for(int i = 0; i < (int)good_matches.size(); i++){
-		matchedKeyPointCoordinatesX.push_back(keypointsX[good_matches[i].queryIdx].pt);
-		matchedKeyPointCoordinatesY.push_back(keypointsX[good_matches[i].trainIdx].pt);
-	}
-
-	return good_matches.size();
 }
 
-void viewMorphing::getFundamentalMatrix(){
-	F = findFundamentalMat(cv::Mat(matchedKeyPointCoordinatesX), cv::Mat(matchedKeyPointCoordinatesY), CV_FM_RANSAC, 3.0, 0.99, mask);
-	std::cout<<"F: "<<F<<std::endl;
+void viewMorphing::getFundamentalMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
+	_parameters.F = cv::findFundamentalMat(cv::Mat(_X.matchedKeyPointsCoordinates), cv::Mat(_Y.matchedKeyPointsCoordinates), CV_FM_RANSAC, 3.0, 0.99, mask);
 }
 
-void viewMorphing::getEssentialMatrix(){
-	E = intrinsicX.t()*F*intrinsicX;
-	std::cout<<"E: "<<E<<std::endl;
+void viewMorphing::getEssentialMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
+	_parameters.E = _X.intrinsic.t()*_parameters.F*_X.intrinsic;
 }
 
-void viewMorphing::decomposeEssentialMatrix(){
-	cv::SVD svd(E,cv::SVD::MODIFY_A);
+void viewMorphing::decomposeEssentialMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
+	cv::SVD svd(_parameters.E,cv::SVD::MODIFY_A);
 	cv::Mat svd_u = svd.u;
 	cv::Mat svd_vt = svd.vt;
 	cv::Mat svd_w = svd.w;
@@ -172,87 +137,68 @@ void viewMorphing::decomposeEssentialMatrix(){
 	std::vector<cv::Point3d> inlierY;
 	for(unsigned int i=0; i<mask.total(); i++){
 		if(mask.at<unsigned char>(i,1)){
-			cv::Matx31d X(matchedKeyPointCoordinatesX[i].x,matchedKeyPointCoordinatesX[i].y,1.0);
-			cv::Matx31d Y(matchedKeyPointCoordinatesY[i].x,matchedKeyPointCoordinatesY[i].y,1.0);
-			cv::Mat mulX = intrinsicXInverse*(cv::Mat(X));
-			cv::Mat mulY = intrinsicYInverse*(cv::Mat(Y));
+			cv::Matx31d X(_X.matchedKeyPointsCoordinates[i].x,_X.matchedKeyPointsCoordinates[i].y,1.0);
+			cv::Matx31d Y(_Y.matchedKeyPointsCoordinates[i].x,_Y.matchedKeyPointsCoordinates[i].y,1.0);
+			cv::Mat mulX = _X.inverseIntrinsic*(cv::Mat(X));
+			cv::Mat mulY = _Y.inverseIntrinsic*(cv::Mat(Y));
 			cv::Point3d pX(mulX.at<double>(0,0),mulX.at<double>(1,0),mulX.at<double>(2,0));
 			cv::Point3d pY(mulY.at<double>(0,0),mulY.at<double>(1,0),mulY.at<double>(2,0));
 			inlierX.push_back(pX);
 			inlierY.push_back(pY);
 		}
 	}
-	Rot = cv::Mat(R).clone();
-	T = cv::Mat(svd_u.col(2)).clone();
-	if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
+	_X.R = cv::Mat(R).clone();
+	_X.t = cv::Mat(svd_u.col(2)).clone();
+
+	if(!isInFrontOfBothCameras(inlierX,inlierY,_X.R,_X.t)){
 		std::cout<<"birinci degil t degisti"<<std::endl;
-		T = -1*T;
-		if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
+		_X.t = -1*_X.t;
+		if(!isInFrontOfBothCameras(inlierX,inlierY,_X.R,_X.t)){
 			std::cout<<"ikinci degil R ve t degisti"<<std::endl;
-			Rot = svd_u * cv::Mat(W).t() * svd_vt;
-			T = -1*T;
-			if(!isInFrontOfBothCameras(inlierX,inlierY,Rot,T)){
+			_X.R = svd_u * cv::Mat(W).t() * svd_vt;
+			_X.t = -1*_X.t;
+			if(!isInFrontOfBothCameras(inlierX,inlierY,_X.R,_X.t)){
 				std::cout<<"ucuncu de degilmis, t degisti"<<std::endl;
-				T = -1*T;
+				_X.t = -1*_X.t;
 			}
 		}
 	}
 }
 
-void viewMorphing::initMorph(double scale){
-	cv::undistort(frameX, frameXUndistorted, intrinsicX, distortionCoeffsX);
-	cv::undistort(frameY, frameYUndistorted, intrinsicY, distortionCoeffsY);
-
-	if(scale != 1.0){
-		cv::resize(frameXUndistorted,frameXUndistorted,cv::Size(0,0),scale,scale);
-		cv::resize(frameYUndistorted,frameYUndistorted,cv::Size(0,0),scale,scale);
-	}
-	// Produce Gray Images from Undistorted RGB ones for speed concerns.
-	cv::cvtColor(frameXUndistorted,frameGrayX,CV_RGB2GRAY);
-	cv::cvtColor(frameYUndistorted,frameGrayY,CV_RGB2GRAY);
-	// Produce 3 channel Gray Images
-	cv::cvtColor(frameGrayX,frameGrayX3C,CV_GRAY2RGB);
-	cv::cvtColor(frameGrayY,frameGrayY3C,CV_GRAY2RGB);
-}
-
-void viewMorphing::preWarp(){
+void viewMorphing::preWarp(stereoVision& _X, stereoVision& _Y, cv::Mat& _canvas){
 	cv::Mat R1, R2, P1, P2, Q, mapx1, mapx2, mapy1, mapy2;
-	cv::Mat rectX, rectY;
-	cv::Mat canvas;
 	cv::Rect validROI[2];
 
 	double sf;
 	int w, h;
-	sf = 600./MAX(frameX.size().width, frameX.size().height);
-	w = cvRound(frameX.size().width*sf);
-	h = cvRound(frameX.size().height*sf);
-	canvas.create(h, w*2, CV_8UC3);
+	sf = 600./MAX(_X.frameSize.width, _X.frameSize.height);
+	w = cvRound(_X.frameSize.width*sf);
+	h = cvRound(_X.frameSize.height*sf);
+	_canvas.create(h, w*2, CV_8UC3);
 
-	cv::stereoRectify(intrinsicX, distortionCoeffsX, intrinsicY, distortionCoeffsY, frameX.size(), Rot, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1, frameX.size(), &validROI[0], &validROI[1]);
+	cv::stereoRectify(_X.intrinsic, _X.distortion, _Y.intrinsic, _Y.distortion, _X.frameSize, _X.R, _X.t, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1, _X.frameSize, &validROI[0], &validROI[1]);
 
-	cv::initUndistortRectifyMap(intrinsicX, distortionCoeffsX, R1, P1, frameX.size(), CV_32FC1, mapx1, mapy1);
-	cv::initUndistortRectifyMap(intrinsicY, distortionCoeffsY, R2, P2, frameX.size(), CV_32FC1, mapx2, mapy2);
-	cv::remap(frameXUndistorted, rectX, mapx1, mapy1, CV_INTER_LINEAR);
-	cv::remap(frameYUndistorted, rectY, mapx2, mapy2, CV_INTER_LINEAR);
+	cv::initUndistortRectifyMap(_X.intrinsic, _X.distortion, R1, P1, _X.frameSize, CV_32FC1, mapx1, mapy1);
+	cv::initUndistortRectifyMap(_Y.intrinsic, _Y.distortion, R2, P2, _Y.frameSize, CV_32FC1, mapx2, mapy2);
+
+	cv::remap(_X.frameGray, _X.preWarped, mapx1, mapy1, CV_INTER_LINEAR);
+	cv::remap(_Y.frameGray, _Y.preWarped, mapx2, mapy2, CV_INTER_LINEAR);
 
 	//for(int k=0; k<2;k++){
 		int k = 0;
-		cv::Mat canvasPart = canvas(cv::Rect(w*k, 0, w, h));
-		cv::resize(rectX, canvasPart, canvasPart.size(), 0, 0, CV_INTER_AREA);
+		cv::Mat canvasPart = _canvas(cv::Rect(w*k, 0, w, h));
+		cv::resize(_X.preWarped, canvasPart, canvasPart.size(), 0, 0, CV_INTER_AREA);
 		std::cout<<"k:"<<k<<" X: "<<validROI[k].x<<" Y: "<<validROI[k].y<<" size: "<<validROI[k].size()<<std::endl;
 	    cv::Rect vroi(cvRound(validROI[k].x*sf), cvRound(validROI[k].y*sf), cvRound(validROI[k].width*sf), cvRound(validROI[k].height*sf));
 		cv::rectangle(canvasPart, vroi, cv::Scalar(0,0,255), 3, 8);
 		k = 1;
-		cv::Mat canvasPart2 = canvas(cv::Rect(w*k, 0, w, h));
-		cv::resize(rectY, canvasPart2, canvasPart2.size(), 0, 0, CV_INTER_AREA);
+		cv::Mat canvasPart2 = _canvas(cv::Rect(w*k, 0, w, h));
+		cv::resize(_Y.preWarped, canvasPart2, canvasPart2.size(), 0, 0, CV_INTER_AREA);
 		std::cout<<"k:"<<k<<" X: "<<validROI[k].x<<" Y: "<<validROI[k].y<<" size: "<<validROI[k].size()<<std::endl;
 	    cv::Rect vroi2(cvRound(validROI[k].x*sf), cvRound(validROI[k].y*sf), cvRound(validROI[k].width*sf), cvRound(validROI[k].height*sf));
 		cv::rectangle(canvasPart2, vroi2, cv::Scalar(0,0,255), 3, 8);
 	// }
 
-	cv::imshow("canvas",canvas);
-	cv::imshow("Warped Frame X", rectX);
-	cv::imshow("Warped Frame Y", rectY);
 }
 
 void viewMorphing::interpolate(){
@@ -263,21 +209,18 @@ void viewMorphing::postWarp(){
 
 }
 
-void viewMorphing::uncalibratedRect(){
+void viewMorphing::uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
 	cv::Mat H1,H2,preWrappedLeft,preWrappedRight;
 	cv::Mat R1,R2,P1,P2,mapx1,mapx2,mapy1,mapy2;
 	//std::cout<<matchedKeyPointCoordinatesX.size()<<"  "<<matchedKeyPointCoordinatesY.size()<<std::endl;
-	cv::stereoRectifyUncalibrated(matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY, F, frameX.size(), H1, H2);
-    R1 = intrinsicX.inv()*H1*intrinsicX;
-    R2 = intrinsicY.inv()*H2*intrinsicY;
-    P1 = intrinsicX;
-    P2 = intrinsicY;
-    cv::initUndistortRectifyMap(intrinsicX, distortionCoeffsX, R1, P1, frameX.size(), CV_16SC2, mapx1, mapy1);
-    cv::initUndistortRectifyMap(intrinsicY, distortionCoeffsY, R2, P2, frameX.size(), CV_16SC2, mapx2, mapy2);
+	cv::stereoRectifyUncalibrated(_X.matchedKeyPointsCoordinates, _Y.matchedKeyPointsCoordinates, _parameters.F, _X.frameSize, H1, H2, 0.8);
+    R1 = _X.intrinsic.inv()*H1*_X.intrinsic;
+    R2 = _Y.intrinsic.inv()*H2*_Y.intrinsic;
+    P1 = _X.intrinsic;
+    P2 = _Y.intrinsic;
+    cv::initUndistortRectifyMap(_X.intrinsic, _X.distortion, R1, P1, _X.frameSize, CV_16SC2, mapx1, mapy1);
+    cv::initUndistortRectifyMap(_Y.intrinsic, _Y.distortion, R2, P2, _Y.frameSize, CV_16SC2, mapx2, mapy2);
 
-    cv::remap(frameXUndistorted, preWrappedLeft, mapx1, mapy1, CV_INTER_LINEAR);
-    cv::remap(frameYUndistorted, preWrappedRight, mapx2, mapy2, CV_INTER_LINEAR);
-
-	cv::imshow("Uncalibrated Rectified Image Left", preWrappedLeft);
-	cv::imshow("Uncalibrated Rectified Image Right", preWrappedRight);
+    cv::remap(_X.frameUndistorted, _X.preWarped, mapx1, mapy1, CV_INTER_LINEAR);
+    cv::remap(_Y.frameUndistorted, _Y.preWarped, mapx2, mapy2, CV_INTER_LINEAR);
 }

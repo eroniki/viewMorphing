@@ -22,33 +22,40 @@
 #define LIBVIEWMORPHING_H_
 
 struct stereoVision{
-	  unsigned int _whichCamera;
-	  unsigned int _keypointSize;
-	  unsigned int _featureSize;
-	  unsigned int _descriptorSize;
-	  cv::Mat _F;
-	  cv::Mat _E;
-	  cv::Mat _intrinsic;
-	  cv::Mat _distortion;
-	  cv::Mat _projection;
+	  unsigned int whichCamera;
+	  unsigned int keyPointSize;
+	  unsigned int featureSize;
+	  unsigned int descriptorSize;
+	  cv::Mat intrinsic;
+	  cv::Mat inverseIntrinsic;
+	  cv::Mat distortion;
+	  cv::Mat projection;
+	  cv::Mat F, E;
 	  cv::Mat R;
 	  cv::Mat t;
 	  // frames
-	  cv::Mat _frame;
-	  cv::Mat _frameGray;
-	  cv::Mat _frameGray3Channels;
-	  cv::Mat _frameUndistorted;
-	  cv::Mat _preWarped;
+	  cv::Mat frame;
+	  cv::Mat frameGray;
+	  cv::Mat frameGray3Channels;
+	  cv::Mat frameUndistorted;
+	  cv::Mat preWarped;
+	  // Sizes of frames
+	  cv::Size frameSize;
 	  // key points, feature, descriptors
-	  std::vector<cv::Point2f> _matchedKeypointsCoordinates;
-	  std::vector<cv::KeyPoint> _keyPoints;
-	  std::vector<cv::DMatch> _matches;
-	  std::vector<cv::Point3f> _lines;
-	};
+	  std::vector<cv::Point2f> matchedKeyPointsCoordinates;
+	  std::vector<cv::KeyPoint> keyPoints;
+	  cv::Mat descriptors;
+	  std::vector<cv::Point3f> lines;
+};
+
+struct morphParameters{
+	cv::Mat F, E;
+	std::vector<cv::DMatch> matches, goodMatches;
+	cv::Mat canvasKeyPoints;
+};
 
 class viewMorphing{
 // XXX Add Private Variables & Functions
-	bool verbose;
 	cv::Mat intrinsicX, intrinsicY, distortionCoeffsX,distortionCoeffsY; // Intrinsic Matrixes
 	cv::Mat descriptorsX, descriptorsY;
 	cv::Mat intrinsicXInverse, intrinsicYInverse;
@@ -58,33 +65,22 @@ class viewMorphing{
 	std::vector<cv::KeyPoint> keypointsX, keypointsY;
 	std::vector<cv::DMatch> matches, good_matches;
 	std::vector<cv::Point3f> linesX, linesY;
-	cv::RNG rng;
-	cv::FlannBasedMatcher matcher;
 	bool isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T);
 public:
 	// XXX Add Public Variables & Functions
-	cv::Mat warpedFrameX, warpedFrameY;
-	cv::Mat frameX, frameY;
-	cv::Mat frameGrayX, frameGrayY;
-	cv::Mat frameXUndistorted, frameYUndistorted;
-	cv::Mat E, F; // Essential and Fundamental Matrix
-	cv::Mat Rot, T; // Relative Rotation and translation between two cameras.
 	viewMorphing();
-	viewMorphing(cv::Mat intX, cv::Mat intY, cv::Mat distortionCoeffX, cv::Mat distortionCoeffY, bool isVerbose = false);
-	viewMorphing(stereoVision X, stereoVision Y, bool isVerobose);
+	viewMorphing(stereoVision& _X, stereoVision& _Y);
 	~viewMorphing();
-	void displayFrames();
-	std::vector<unsigned int> featureDetection(cv::Mat frameX, cv::Mat frameY, int minHessian=400);
-	void featureDescriptorExtractor(cv::Mat frameX, cv::Mat frameY);
-	int featureMatcher(double maxDist=0, double minDist=100, bool draw = false);
-	void getFundamentalMatrix();
-	void getEssentialMatrix();
-	void decomposeEssentialMatrix();
-	void initMorph(double scale=1.0);
-	void preWarp();
+	void featureDetection(stereoVision& _X, stereoVision& _Y, int _minHessian=400);
+	void featureDescriptorExtractor(stereoVision& _X, stereoVision& _Y);
+	void featureMatcher(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters, double _minDist=100, double _maxDist=0);
+	void getFundamentalMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
+	void getEssentialMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
+	void decomposeEssentialMatrix(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
+	void preWarp(stereoVision& _X, stereoVision& _Y, cv::Mat& _canvas);
 	void interpolate();
 	void postWarp();
-	void uncalibratedRect();
+	void uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
 };
 
 #endif /* LIBVIEWMORPHING_H_ */

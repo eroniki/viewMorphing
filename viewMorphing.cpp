@@ -27,28 +27,9 @@ const int alpha_slider_max = 100;
 const int beta_slider_max = 100;
 int alpha_slider, beta_slider;
 double alpha, beta;
-
-//double intrinsicX[] ={1918.270000, 2.489820, 17.915, //intrinsic values
-//          	  	  	  0.0, 1922.580000, -63.736, //(320.264)
-//          	  	  	  0.0, 0.0, 1.0};
-//
-//double intrinsicY[] = {1909.910000,	0.571503, -33.069, //intrinsic values
-//						0.0, 1915.890000, -10.306, // (394,306)
-//						0.0, 0.0, 1.0};
-
-double intrinsicX[] ={534.71330014574596, 0, 335.13862534129095, //intrinsic values
-          	  	  	  0.0, 534.71330014574596, 240.20611211620974, //(320.264)
-          	  	  	  0.0, 0.0, 1.0};
-
-double intrinsicY[] = {534.71330014574596,	0., 334.01539789486719, //intrinsic values
-						0.0, 534.71330014574596, 241.590467217259776, // (394,306)
-						0.0, 0.0, 1.0};
-
-double distX[] = {-0.27456948645081880, -0.018313659520296389, 0., 0., 0., 0., 0., -0.24476896009779484};	//distortion coeff's
-double distY[] = {0.28073637369061943, 0.093010333969654108, 0., 0., 0., 0., 0., 0.016329629645783102};	//distortion coeff's
-
 char alphaBarText[50];
 char betaBarText[50];
+
 
 void on_trackbar(int, void*){
   alpha = (double) alpha_slider/alpha_slider_max;
@@ -58,75 +39,103 @@ void on_trackbar(int, void*){
 }
 
 int main(){
-	Mat distortionX(1, 8, CV_64F, distX);	 // distortion coeff's
-	Mat distortionY(1, 8, CV_64F, distY);	 // distortion coeff's
-	Mat intrinsicMatrixX(3, 3, CV_64F, intrinsicX); // intrinsic matrix
-	Mat intrinsicMatrixY(3, 3, CV_64F, intrinsicY); // intrinsic matrix
-
-	viewMorphing myMorph(intrinsicMatrixX,intrinsicMatrixY, distortionX, distortionY);
 	stereoVision cameraX, cameraY;
+	morphParameters parameters;
+	static bool drawCanvases = true;
 
-	//myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam0/color-cam0-f000.jpg",1);
-	//myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-3/MSR3DVideo-Ballet/cam3/color-cam3-f000.jpg",1);
+	double intrinsicX[] ={534.71330014574596, 0, 335.13862534129095, //intrinsic values
+	          	  	  	  0.0, 534.71330014574596, 240.20611211620974, //(320.264)
+	          	  	  	  0.0, 0.0, 1.0};
 
-	myMorph.frameX = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/left.jpg",1);
-	myMorph.frameY = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/right.jpg",1);
+	double intrinsicY[] = {534.71330014574596,	0., 334.01539789486719, //intrinsic values
+							0.0, 534.71330014574596, 241.590467217259776, // (394,306)
+							0.0, 0.0, 1.0};
 
-	if(!myMorph.frameX.data || !myMorph.frameY.data){
+	double distX[] = {-0.27456948645081880, -0.018313659520296389, 0., 0., 0., 0., 0., -0.24476896009779484};	//distortion coeff's
+	double distY[] = {-0.28073637369061943, 0.093010333969654108, 0., 0., 0., 0., 0., 0.016329629645783102};	//distortion coeff's
+
+	cameraX.intrinsic = Mat(3, 3, CV_64F, intrinsicX);
+	cameraX.distortion= Mat(1, 8, CV_64F, distX);
+	cameraX.frame = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/left.jpg",1);
+
+	cameraY.intrinsic = Mat(3, 3, CV_64F, intrinsicY);
+	cameraY.distortion= Mat(1, 8, CV_64F, distY);
+	cameraY.frame = imread("/home/eiki/workspace/viewMorphing/dataset/set-4/right.jpg",1);
+
+	if(!cameraX.frame.data || !cameraY.frame.data){
 		cerr<<"Image could loaded!"<<endl;
 		return -1;
 	}
 
-// TODO Uncomment to view trackbars
-// 	view maximum translations with respect to the each axis
-//	namedWindow("Linear Interpolation",1);
-//	sprintf(alphaBarText, "Alpha x %d", alpha_slider_max);
-//	sprintf(betaBarText, "Beta x %d", beta_slider_max);
-//	createTrackbar(alphaBarText, "Linear Interpolation", &alpha_slider, alpha_slider_max, on_trackbar);
-//	createTrackbar(betaBarText, "Linear Interpolation", &beta_slider, beta_slider_max, on_trackbar);
+	// Construct class for morphing
+	viewMorphing myMorph(cameraX, cameraY);
 
-	// Pre-proccessing before warping. Undistort images, make them gray scale and produce 3 channel gray images.
-	myMorph.initMorph();
+	// Initialize Windows showing frames as inputs & results.
+	//namedWindow("Camera 0",1);
+	//namedWindow("Camera 1",1);
+	namedWindow("Camera 0 Undistorted",1);
+	namedWindow("Camera 1 Undistorted",1);
+	namedWindow("Warped Frame Camera 0",1);
+	namedWindow("Warped Frame Camera 1",1);
+	namedWindow("Canvas",1);
 
-	// Find features
-	std::vector<unsigned int> nFeature = myMorph.featureDetection(myMorph.frameXUndistorted, myMorph.frameYUndistorted,200);
-	cout<<"1: "<<nFeature.at(0)<<" 2: "<<nFeature.at(1)<<endl;
+	// Initialize Track Bars
+	sprintf(alphaBarText, "Alpha x %d", alpha_slider_max);
+	sprintf(betaBarText, "Beta x %d", beta_slider_max);
+	createTrackbar(alphaBarText, "Canvas", &alpha_slider, alpha_slider_max, on_trackbar);
+	createTrackbar(betaBarText, "Canvas", &beta_slider, beta_slider_max, on_trackbar);
 
-	// Extract descriptors
-	myMorph.featureDescriptorExtractor(myMorph.frameXUndistorted, myMorph.frameYUndistorted);
+	while(true){
+		// Find features
+		myMorph.featureDetection(cameraX, cameraY, 200);
+		cout<<"Feature Found Camera X: "<<cameraX.keyPointSize<<std::endl;
+		cout<<"Feature Found Camera Y: "<<cameraY.keyPointSize<<std::endl;
 
-// TODO Make a proper threshold for this variable, try.. except..
-	// Match features
-	int nGoodMatches = myMorph.featureMatcher(0,100,true);
-	cout<<"Good Matches: "<<nGoodMatches<<endl;
+		// Extract descriptors
+		myMorph.featureDescriptorExtractor(cameraX, cameraY);
 
-	// Check if there is enough matching features or not to proceed.
-	if(nGoodMatches<10){
-		cerr<<"Couldn't find enough matching keypoints."<<endl;
-		return -2;
+		// Match features
+		myMorph.featureMatcher(cameraX, cameraY,parameters);
+		cout<<"Matches: "<<parameters.matches.size()<<" in which number of: "<<parameters.goodMatches.size()<<" matched good."<<endl;
+
+		// Check if there is enough matching features or not to proceed.
+		if(parameters.goodMatches.size()<40){
+			cerr<<"Couldn't find enough matching key points."<<endl;
+			return -2;
+		}
+
+		cout<<"Matched Key Points Coordinates X:"<<cameraX.matchedKeyPointsCoordinates.size()<<" Y: "<<cameraY.matchedKeyPointsCoordinates.size()<<endl;
+
+		// Use matching features to estimate fundamental matrix (F)
+		myMorph.getFundamentalMatrix(cameraX, cameraY, parameters);
+
+		// Get Essential matrix (E) from F
+		myMorph.getEssentialMatrix(cameraX, cameraY, parameters);
+
+		// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
+		myMorph.decomposeEssentialMatrix(cameraX, cameraY, parameters);
+
+		// Rectify both input images to make them on the same plane.
+		// In^ = In*inverse(Hn)
+//		Mat canvasPreWarped;
+//		myMorph.preWarp(cameraX, cameraY, canvasPreWarped);
+
+		if(drawCanvases){
+		//	drawMatches(cameraX.frameUndistorted, cameraX.keyPoints, cameraY.frameUndistorted, cameraY.keyPoints, parameters.goodMatches, parameters.canvasKeyPoints, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+		//	imshow("Canvas", parameters.canvasKeyPoints);
+//			imshow("canvas",canvasPreWarped);
+		}
+		myMorph.uncalibratedRect(cameraX, cameraY, parameters);
+		imshow("Warped Frame Camera 0", cameraX.preWarped);
+		imshow("Warped Frame Camera 1", cameraY.preWarped);
+		imshow("Camera 0 Undistorted", cameraX.frameUndistorted);
+		imshow("Camera 1 Undistorted", cameraY.frameUndistorted);
+		if(waitKey (30) >= 0) break;
+
+	// TODO Next Steps
+	//	myMorph.interpolate();
+	//	myMorph.postWarp();
 	}
 
-	// Use matching features to estimate fundamental matrix (F)
-	myMorph.getFundamentalMatrix();
-
-	// Get Essential matrix (E) from F
-	myMorph.getEssentialMatrix();
-
-	// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
-	myMorph.decomposeEssentialMatrix();
-
-	// Rectify both input images to make them on the same plane.
-	// In^ = In*inverse(Hn)
-	myMorph.preWarp();
-
-// TODO Uncomment
-	myMorph.uncalibratedRect();
-
-// TODO Next Steps
-//	myMorph.interpolate();
-//	myMorph.postWarp();
-
-	// Show frames as result
-	myMorph.displayFrames();
 	return 0;
 }
