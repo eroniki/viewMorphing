@@ -218,6 +218,7 @@ void viewMorphing::uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphPar
     R2 = _Y.intrinsic.inv()*H2*_Y.intrinsic;
     P1 = _X.intrinsic;
     P2 = _Y.intrinsic;
+
     cv::initUndistortRectifyMap(_X.intrinsic, _X.distortion, R1, P1, _X.frameSize, CV_16SC2, mapx1, mapy1);
     cv::initUndistortRectifyMap(_Y.intrinsic, _Y.distortion, R2, P2, _Y.frameSize, CV_16SC2, mapx2, mapy2);
 
