@@ -126,8 +126,8 @@ int main(){
 //			imshow("canvas",canvasPreWarped);
 		}
 		myMorph.uncalibratedRect(cameraX, cameraY, parameters);
-		imshow("Warped Frame Camera 0", cameraX.preWarped);
-		imshow("Warped Frame Camera 1", cameraY.preWarped);
+		imshow("Warped Frame Camera 0", cameraX.preWarped.t());
+		imshow("Warped Frame Camera 1", cameraY.preWarped.t());
 		imshow("Camera 0 Undistorted", cameraX.frameUndistorted);
 		imshow("Camera 1 Undistorted", cameraY.frameUndistorted);
 		if(waitKey (30) >= 0) break;

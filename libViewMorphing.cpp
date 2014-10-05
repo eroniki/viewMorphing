@@ -210,9 +210,8 @@ void viewMorphing::postWarp(){
 }
 
 void viewMorphing::uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
-	cv::Mat H1,H2,preWrappedLeft,preWrappedRight;
+	cv::Mat H1,H2;
 	cv::Mat R1,R2,P1,P2,mapx1,mapx2,mapy1,mapy2;
-	//std::cout<<matchedKeyPointCoordinatesX.size()<<"  "<<matchedKeyPointCoordinatesY.size()<<std::endl;
 	cv::stereoRectifyUncalibrated(_X.matchedKeyPointsCoordinates, _Y.matchedKeyPointsCoordinates, _parameters.F, _X.frameSize, H1, H2, 0.8);
     R1 = _X.intrinsic.inv()*H1*_X.intrinsic;
     R2 = _Y.intrinsic.inv()*H2*_Y.intrinsic;
