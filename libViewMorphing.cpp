@@ -46,7 +46,7 @@ viewMorphing::viewMorphing(stereoVision& _X, stereoVision& _Y){
 	_Y.frameSize = _Y.frame.size();
 	_Y.inverseIntrinsic = _Y.intrinsic.inv();
 
-	// Undistort frames to eliminate barrel distortion
+	// Un-distort frames to eliminate lens distortions
 	cv::undistort(_X.frame, _X.frameUndistorted, _X.intrinsic, _X.distortion);
 	cv::undistort(_Y.frame, _Y.frameUndistorted, _Y.intrinsic, _Y.distortion);
 
@@ -209,10 +209,10 @@ void viewMorphing::postWarp(){
 
 }
 
-void viewMorphing::uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
+void viewMorphing::uncalibratedRectify(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters){
 	cv::Mat H1,H2;
 	cv::Mat R1,R2,P1,P2,mapx1,mapx2,mapy1,mapy2;
-	cv::stereoRectifyUncalibrated(_X.matchedKeyPointsCoordinates, _Y.matchedKeyPointsCoordinates, _parameters.F, _X.frameSize, H1, H2, 0.8);
+	cv::stereoRectifyUncalibrated(_X.matchedKeyPointsCoordinates, _Y.matchedKeyPointsCoordinates, _parameters.F, _X.frameSize, H1, H2, 0.2);
     R1 = _X.intrinsic.inv()*H1*_X.intrinsic;
     R2 = _Y.intrinsic.inv()*H2*_Y.intrinsic;
     P1 = _X.intrinsic;

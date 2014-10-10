@@ -56,14 +56,7 @@ struct morphParameters{
 
 class viewMorphing{
 // XXX Add Private Variables & Functions
-	cv::Mat intrinsicX, intrinsicY, distortionCoeffsX,distortionCoeffsY; // Intrinsic Matrixes
-	cv::Mat descriptorsX, descriptorsY;
-	cv::Mat intrinsicXInverse, intrinsicYInverse;
-	cv::Mat frameGrayX3C,frameGrayY3C, frameMatches;
 	cv::Mat mask; // mask for validate fundamental matrix
-	std::vector<cv::Point2f> matchedKeyPointCoordinatesX, matchedKeyPointCoordinatesY;
-	std::vector<cv::KeyPoint> keypointsX, keypointsY;
-	std::vector<cv::DMatch> matches, good_matches;
 	std::vector<cv::Point3f> linesX, linesY;
 	bool isInFrontOfBothCameras(std::vector<cv::Point3d> inlierX, std::vector<cv::Point3d> inlierY, cv::Mat R, cv::Mat T);
 public:
@@ -80,7 +73,7 @@ public:
 	void preWarp(stereoVision& _X, stereoVision& _Y, cv::Mat& _canvas);
 	void interpolate();
 	void postWarp();
-	void uncalibratedRect(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
+	void uncalibratedRectify(stereoVision& _X, stereoVision& _Y, morphParameters& _parameters);
 };
 
 #endif /* LIBVIEWMORPHING_H_ */

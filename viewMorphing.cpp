@@ -87,47 +87,48 @@ int main(){
 
 	while(true){
 		// Find features
-		myMorph.featureDetection(cameraX, cameraY, 200);
-		cout<<"Feature Found Camera X: "<<cameraX.keyPointSize<<std::endl;
-		cout<<"Feature Found Camera Y: "<<cameraY.keyPointSize<<std::endl;
-
-		// Extract descriptors
-		myMorph.featureDescriptorExtractor(cameraX, cameraY);
-
-		// Match features
-		myMorph.featureMatcher(cameraX, cameraY,parameters);
-		cout<<"Matches: "<<parameters.matches.size()<<" in which number of: "<<parameters.goodMatches.size()<<" matched good."<<endl;
-
-		// Check if there is enough matching features or not to proceed.
-		if(parameters.goodMatches.size()<40){
-			cerr<<"Couldn't find enough matching key points."<<endl;
-			return -2;
-		}
-
-		cout<<"Matched Key Points Coordinates X:"<<cameraX.matchedKeyPointsCoordinates.size()<<" Y: "<<cameraY.matchedKeyPointsCoordinates.size()<<endl;
-
-		// Use matching features to estimate fundamental matrix (F)
-		myMorph.getFundamentalMatrix(cameraX, cameraY, parameters);
-
-		// Get Essential matrix (E) from F
-		myMorph.getEssentialMatrix(cameraX, cameraY, parameters);
-
-		// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
-		myMorph.decomposeEssentialMatrix(cameraX, cameraY, parameters);
-
-		// Rectify both input images to make them on the same plane.
-		// In^ = In*inverse(Hn)
-//		Mat canvasPreWarped;
-//		myMorph.preWarp(cameraX, cameraY, canvasPreWarped);
-
-		if(drawCanvases){
-		//	drawMatches(cameraX.frameUndistorted, cameraX.keyPoints, cameraY.frameUndistorted, cameraY.keyPoints, parameters.goodMatches, parameters.canvasKeyPoints, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		//	imshow("Canvas", parameters.canvasKeyPoints);
-//			imshow("canvas",canvasPreWarped);
-		}
-		myMorph.uncalibratedRect(cameraX, cameraY, parameters);
-		imshow("Warped Frame Camera 0", cameraX.preWarped.t());
-		imshow("Warped Frame Camera 1", cameraY.preWarped.t());
+//		myMorph.featureDetection(cameraX, cameraY, 200);
+//		cout<<"Feature Found Camera X: "<<cameraX.keyPointSize<<std::endl;
+//		cout<<"Feature Found Camera Y: "<<cameraY.keyPointSize<<std::endl;
+//
+//		// Extract descriptors
+//		myMorph.featureDescriptorExtractor(cameraX, cameraY);
+//
+//		// Match features
+//		myMorph.featureMatcher(cameraX, cameraY,parameters);
+//		cout<<"Matches: "<<parameters.matches.size()<<" in which number of: "<<parameters.goodMatches.size()<<" matched good."<<endl;
+//
+//		// Check if there is enough matching features or not to proceed.
+//		if(parameters.goodMatches.size()<40){
+//			cerr<<"Couldn't find enough matching key points."<<endl;
+//			return -2;
+//		}
+//
+//		cout<<"Matched Key Points Coordinates X:"<<cameraX.matchedKeyPointsCoordinates.size()<<" Y: "<<cameraY.matchedKeyPointsCoordinates.size()<<endl;
+//
+//		// Use matching features to estimate fundamental matrix (F)
+//		myMorph.getFundamentalMatrix(cameraX, cameraY, parameters);
+//
+//		// Get Essential matrix (E) from F
+//		myMorph.getEssentialMatrix(cameraX, cameraY, parameters);
+//
+//		// Decompose E into Rotation Matrices (R1,R2,R3) and Translation Vector (T)
+//		myMorph.decomposeEssentialMatrix(cameraX, cameraY, parameters);
+//
+//		// Rectify both input images to make them on the same plane.
+//		// In^ = In*inverse(Hn)
+////		Mat canvasPreWarped;
+////		myMorph.preWarp(cameraX, cameraY, canvasPreWarped);
+//
+//		if(drawCanvases){
+//		//	drawMatches(cameraX.frameUndistorted, cameraX.keyPoints, cameraY.frameUndistorted, cameraY.keyPoints, parameters.goodMatches, parameters.canvasKeyPoints, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+//		//	imshow("Canvas", parameters.canvasKeyPoints);
+////			imshow("canvas",canvasPreWarped);
+//		}
+//		cout<<parameters.F<<endl;
+//		myMorph.uncalibratedRectify(cameraX, cameraY, parameters);
+//		imshow("Warped Frame Camera 0", cameraX.preWarped);
+//		imshow("Warped Frame Camera 1", cameraY.preWarped);
 		imshow("Camera 0 Undistorted", cameraX.frameUndistorted);
 		imshow("Camera 1 Undistorted", cameraY.frameUndistorted);
 		if(waitKey (30) >= 0) break;
