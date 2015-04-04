@@ -2,7 +2,7 @@
  * libViewMorphing.cpp
  *
  *  Created on: Jul 31, 2014
- *      Author: eiki
+ *      Author: Murat Ambarkutuk
  */
 
 #include "libViewMorphing.h"

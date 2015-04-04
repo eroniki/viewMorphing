@@ -2,8 +2,8 @@
 // Name        : viewMorphing.cpp
 // Author      : Murat Ambarkutuk
 // Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Copyright   : Under GPL 2015
+// Description : View Morphing, Ansi-style
 //============================================================================
 
 #include <iostream>
